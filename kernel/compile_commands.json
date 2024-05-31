@@ -1,0 +1,38 @@
+[
+  {
+    "arguments": [
+      "../aarch64-none-elf/bin/aarch64-none-elf-gcc",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-I",
+      "include",
+      "-c",
+      "-o",
+      "objects/boot.S.o",
+      "src/boot.S"
+    ],
+    "directory": "/home/box/code/c/system_stuff/aarch64/bloatloader",
+    "file": "/home/box/code/c/system_stuff/aarch64/bloatloader/src/boot.S",
+    "output": "/home/box/code/c/system_stuff/aarch64/bloatloader/objects/boot.S.o"
+  },
+  {
+    "arguments": [
+      "../aarch64-none-elf/bin/aarch64-none-elf-gcc",
+      "-ffreestanding",
+      "-Wall",
+      "-Wextra",
+      "-g",
+      "-I",
+      "include",
+      "-c",
+      "-o",
+      "objects/k.c.o",
+      "src/k.c"
+    ],
+    "directory": "/home/box/code/c/system_stuff/aarch64/bloatloader",
+    "file": "/home/box/code/c/system_stuff/aarch64/bloatloader/src/k.c",
+    "output": "/home/box/code/c/system_stuff/aarch64/bloatloader/objects/k.c.o"
+  }
+]
