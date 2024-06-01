@@ -1,11 +1,14 @@
 #ifndef TYPES
 #define TYPES
 
-#include <stdint.h>
+#include <stdalign.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdarg.h>
-#include <stdalign.h>
+#include <stdint.h>
+
+#define ULL(x) (x##ull)
+#define BIT(x) (ULL(1) << x)
 
 typedef uint8_t u8;
 typedef uint16_t u16;

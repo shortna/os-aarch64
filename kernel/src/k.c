@@ -1,17 +1,7 @@
-#include "types.h"
-// deduced from dump of device tree blob (dtb)
-volatile u64 *UART0 = (u64 *)0x9000000;
-
-u8 print(const char *format) {
-  while (*format) {
-    *UART0 = *format;
-    format++;
-  }
-  return 1;
-}
+#include "uart.h"
 
 void kmain() {
+  uart_setup();
   while (1) {
-    print("Hello, World!\n");
   };
 }

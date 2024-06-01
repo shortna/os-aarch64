@@ -6,12 +6,12 @@
 _start:
   /* intialize stack */
   // STACK_TOP and STACK_SIZE defined in linker script
-  ldr x0, =STACK_TOP  // x0 = stack_top
-  mov sp, x0          // sp = x0
+  ldr x1, =STACK_TOP  // x0 = stack_top
+  mov sp, x1          // sp = x0
 
   // set base address of EVT
-  adr x0, vector_table_el1
-  msr vbar_el1, x0
+  adr x1, vector_table_el1
+  msr vbar_el1, x1
 
   bl kmain
   b .
@@ -119,7 +119,7 @@ el1_lower_el_aarch32_serror: // The exception handler for a System Error
   b print_char
 
 print_char:
-  ldr x0, =0x9000000
-  strb w9, [x0]
+  ldr x1, =0x9000000
+  strb w9, [x1]
   b .
 

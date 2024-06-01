@@ -10,7 +10,7 @@ INCLUDE_DIR = include
 
 LD_SCRIPT := script.ld
 CFLAGS    := -nostdlib -ffreestanding -Wall -Wextra -g -I $(INCLUDE_DIR)
-QEMUFLAGS := -nographic -no-reboot -machine virt -cpu cortex-a57 -m 32
+QEMUFLAGS := -nographic -no-reboot -machine virt -cpu cortex-a57 -m 4 -serial mon:stdio
 
 CC      := ../aarch64-none-elf/bin/aarch64-none-elf-gcc
 AS      := ../aarch64-none-elf/bin/aarch64-none-elf-as
