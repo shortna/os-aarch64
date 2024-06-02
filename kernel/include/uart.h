@@ -61,25 +61,21 @@ static const u16 pl011_offsets[] = {
   [REG_DMACR] = UART_DMACR,
 };
 
-static u64 get_register_address(uart_reg reg) {
-  return UART_BASE_ADDRES + pl011_offsets[reg];
-}
-
-#define UART_DR_FE        (BIT(8) & (*UART_DATA))
-#define UART_DR_PE        (BIT(9) & (*UART_DATA))
-#define UART_DR_BE        (BIT(10) & (*UART_DATA))
-#define UART_DR_OE        (BIT(11) & (*UART_DATA))
+#define UART_DR_FE        BIT(8)
+#define UART_DR_PE        BIT(9)
+#define UART_DR_BE        BIT(10)
+#define UART_DR_OE        BIT(11)
 
 // Flag register
-#define UART_FR_CTS       (BIT(0) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_DSR       (BIT(1) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_DCD       (BIT(2) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_BUSY      (BIT(3) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_RXFE      (BIT(4) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_TXFF      (BIT(5) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_RXFF      (BIT(6) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_TXFE      (BIT(7) & (*(u16 *)(get_register_address(REG_FR)))
-#define UART_FR_RI        (BIT(8) & (*(u16 *)(get_register_address(REG_FR)))
+#define UART_FR_CTS       BIT(0)
+#define UART_FR_DSR       BIT(1)
+#define UART_FR_DCD       BIT(2)
+#define UART_FR_BUSY      BIT(3)
+#define UART_FR_RXFE      BIT(4)
+#define UART_FR_TXFF      BIT(5)
+#define UART_FR_RXFF      BIT(6)
+#define UART_FR_TXFE      BIT(7)
+#define UART_FR_RI        BIT(8)
 
 #define UART_LCRH_BRK     BIT(0)
 #define UART_LCRH_PEN     BIT(1)
@@ -97,21 +93,28 @@ static u64 get_register_address(uart_reg reg) {
 #define UART_CR_TXE    BIT(8)
 #define UART_CR_RXE    BIT(9)
 
-//static void uart_setup() {
-//  // disable uart (just in case)
-//  *UART_CONTROL = ((~UART_CONTROL_UART_ENABLE) & *UART_CONTROL);
-//
-//  // uart busy wait
-//  while (UART_BUSY) {}
-//
-//  // flush transmit FIFO
-//  *UART_LINE_CONTROL_H = ((~UART_LINE_CONTROL_H_FIFO_ENABLE) & (*UART_LINE_CONTROL_H));
-//
-//  *UART_INTEGER_BAUD_RATE = UART_CLOCK % (16 * bps);
-//  *UART_FRACTIONAL_BAUD_RATE = UART_CLOCK % (16 * bps);
-//}
-//
-//static void uart_write_byte(u8 data) {}
-//static void uart_write(const u8 *data, u32 size) {}
+static void * get_register(uart_reg reg) {
+  return (void *)(UART_BASE_ADDRES + pl011_offsets[reg]);
+}
+
+static void uart_setup() {
+  u8 *uart_fr = get_register(REG_FR);
+  u8 *uart_lcrh = get_register(REG_LCRH);
+  u8 *uart_fbrd = get_register(REG_FBRD);
+  u16 *uart_cr = get_register(REG_CR);
+  u16 *uart_ibrd = get_register(REG_IBRD);
+
+  // disable uart (just in case)
+  *uart_cr = ((~UART_CR_UARTEN) & *uart_cr);
+
+  // uart busy wait
+  while (*uart_fr & UART_FR_BUSY) {}
+
+  // flush transmit FIFO
+  *uart_lcrh = ((~UART_LCRH_FEN) & *uart_lcrh);
+}
+
+static void uart_write_byte(u8 data) {}
+static void uart_write(const u8 *data, u32 size) {}
 
 #endif /* UART */
