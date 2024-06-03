@@ -5,15 +5,15 @@
 
 // pl011 - Peripheral Controller
 // address deduced from dump of device tree blob (dtb)
-#define UART_BASE_ADDRES (ULL(0x9000000))
-#define UART_CLOCK (ULL(24000000))
+#define UART_BAUD_RATE   115200ull
+#define UART_BASE_ADDRES 0x9000000ull
+#define UART_CLOCK       24000000ull
 
 /* pl011 UART register offset table */
 #define UART_DR      0x00
 #define UART_RSR     0x04
 #define UART_ESR     0x04
 #define UART_FR      0x18
-#define UART_ILPR    0x20
 #define UART_IBRD    0x24
 #define UART_FBRD    0x28
 #define UART_LCRH    0x2C
@@ -30,7 +30,6 @@ typedef enum {
   REG_RSR,
   REG_ESR,
   REG_FR,
-  REG_ILPR,
   REG_IBRD,
   REG_FBRD,
   REG_LCRH,
@@ -48,7 +47,6 @@ static const u16 pl011_offsets[] = {
   [REG_RSR]   = UART_RSR,
   [REG_ESR]   = UART_ESR,
   [REG_FR]    = UART_FR,
-  [REG_ILPR]  = UART_ILPR,
   [REG_IBRD]  = UART_IBRD,
   [REG_FBRD]  = UART_FBRD,
   [REG_LCRH]  = UART_LCRH,
@@ -61,10 +59,22 @@ static const u16 pl011_offsets[] = {
   [REG_DMACR] = UART_DMACR,
 };
 
+// Data register
 #define UART_DR_FE        BIT(8)
 #define UART_DR_PE        BIT(9)
 #define UART_DR_BE        BIT(10)
 #define UART_DR_OE        BIT(11)
+
+// RSR,ESR
+#define UART_RSR_FE        BIT(0)
+#define UART_RSR_PE        BIT(1)
+#define UART_RSR_BE        BIT(2)
+#define UART_RSR_OE        BIT(3)
+
+#define UART_ESR_FE        BIT(0)
+#define UART_ESR_PE        BIT(1)
+#define UART_ESR_BE        BIT(2)
+#define UART_ESR_OE        BIT(3)
 
 // Flag register
 #define UART_FR_CTS       BIT(0)
@@ -77,6 +87,7 @@ static const u16 pl011_offsets[] = {
 #define UART_FR_TXFE      BIT(7)
 #define UART_FR_RI        BIT(8)
 
+// Line control register high
 #define UART_LCRH_BRK     BIT(0)
 #define UART_LCRH_PEN     BIT(1)
 #define UART_LCRH_EPS     BIT(2)
@@ -88,30 +99,108 @@ static const u16 pl011_offsets[] = {
 #define UART_LCRH_WLEN8   (BIT(5) | BIT(6))
 #define UART_LCRH_SPS     BIT(7)
 
-#define UART_CR_UARTEN BIT(0)
-#define UART_CR_LBE    BIT(7)
-#define UART_CR_TXE    BIT(8)
-#define UART_CR_RXE    BIT(9)
+// Control register
+#define UART_CR_UARTEN    BIT(0)
+#define UART_CR_SIREN     BIT(1)
+#define UART_CR_SIRLP     BIT(2)
+#define UART_CR_LBE       BIT(7)
+#define UART_CR_TXE       BIT(8)
+#define UART_CR_RXE       BIT(9)
+#define UART_CR_DTR       BIT(10)
+#define UART_CR_RTS       BIT(11)
+#define UART_CR_OUT1      BIT(12)
+#define UART_CR_OUT2      BIT(13)
+#define UART_CR_RTSEn     BIT(14)
+#define UART_CR_CTSEn     BIT(15)
 
-static void * get_register(uart_reg reg) {
+// IMSC
+#define UART_IMSC_RIMIM   BIT(0)
+#define UART_IMSC_CTSMIM  BIT(1)
+#define UART_IMSC_DCDMIM  BIT(2)
+#define UART_IMSC_DSRMIM  BIT(3)
+#define UART_IMSC_RXIM    BIT(4)
+#define UART_IMSC_TXIM    BIT(5)
+#define UART_IMSC_RTIM    BIT(6)
+#define UART_IMSC_FEIM    BIT(7)
+#define UART_IMSC_PEIM    BIT(8)
+#define UART_IMSC_BEIM    BIT(9)
+#define UART_IMSC_OEIM    BIT(10)
+
+// RIS
+#define UART_RIS_RIRMIS   BIT(0)
+#define UART_RIS_CTSRMIS  BIT(1)
+#define UART_RIS_DCDRMIS  BIT(2)
+#define UART_RIS_DSRRMIS  BIT(3)
+#define UART_RIS_RXRIS    BIT(4)
+#define UART_RIS_TXRIS    BIT(5)
+#define UART_RIS_RTRIS    BIT(6)
+#define UART_RIS_FERIS    BIT(7)
+#define UART_RIS_PERIS    BIT(8)
+#define UART_RIS_BERIS    BIT(9)
+#define UART_RIS_OERIS    BIT(10)
+
+// MIS 
+#define UART_MIS_RIMMIS   BIT(0)
+#define UART_MIS_CTSMMIS  BIT(1)
+#define UART_MIS_DCDMMIS  BIT(2)
+#define UART_MIS_DSRMMIS  BIT(3)
+#define UART_MIS_RXMIS    BIT(4)
+#define UART_MIS_TXMIS    BIT(5)
+#define UART_MIS_RTMIS    BIT(6)
+#define UART_MIS_FEMIS    BIT(7)
+#define UART_MIS_PEMIS    BIT(8)
+#define UART_MIS_BEMIS    BIT(9)
+#define UART_MIS_OEMIS    BIT(10)
+
+// ICR
+#define UART_ICR_RIMIC    BIT(0)
+#define UART_ICR_CTSMIC   BIT(1)
+#define UART_ICR_DCDMIC   BIT(2)
+#define UART_ICR_DSRMIC   BIT(3)
+#define UART_ICR_RXIC     BIT(4)
+#define UART_ICR_TXIC     BIT(5)
+#define UART_ICR_RTIC     BIT(6)
+#define UART_ICR_FEIC     BIT(7)
+#define UART_ICR_PEIC     BIT(8)
+#define UART_ICR_BEIC     BIT(9)
+#define UART_ICR_OEIC     BIT(10)
+
+// DMACR
+#define UART_DMACR_RXDMAE   BIT(0)
+#define UART_DMACR_TXDMAE   BIT(1)
+#define UART_DMACR_DMAONERR BIT(2)
+
+inline static void *get_register(uart_reg reg) {
   return (void *)(UART_BASE_ADDRES + pl011_offsets[reg]);
 }
 
 static void uart_setup() {
+  u16 *uart_cr = get_register(REG_CR);
+  u16 *uart_ibrd = get_register(REG_IBRD);
   u8 *uart_fr = get_register(REG_FR);
   u8 *uart_lcrh = get_register(REG_LCRH);
   u8 *uart_fbrd = get_register(REG_FBRD);
-  u16 *uart_cr = get_register(REG_CR);
-  u16 *uart_ibrd = get_register(REG_IBRD);
 
   // disable uart (just in case)
-  *uart_cr = ((~UART_CR_UARTEN) & *uart_cr);
+  *uart_cr = (~UART_CR_UARTEN & *uart_cr);
 
   // uart busy wait
-  while (*uart_fr & UART_FR_BUSY) {}
+  while (UART_FR_BUSY & *uart_fr) {}
+
+  // setting baud_rate
+  const float baud_rate = (float)UART_CLOCK / (16 * UART_BAUD_RATE);
+  *uart_ibrd = (u16)baud_rate; // store int part
+                               
+  // fbrd is only 6 bits
+  // set all fbrd bits to 0 and leave last 2 bits untouched 
+  *uart_fbrd &= 3; 
+
+  // mask extracts mantisa from baud_rate
+  // fbrd only 6 bits so shift by 
+  u32 l = GENMASK(0, 23) & *(u32*)&baud_rate;
 
   // flush transmit FIFO
-  *uart_lcrh = ((~UART_LCRH_FEN) & *uart_lcrh);
+  *uart_lcrh = (~UART_LCRH_FEN & *uart_lcrh);
 }
 
 static void uart_write_byte(u8 data) {}

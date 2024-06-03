@@ -1,14 +1,17 @@
 #ifndef TYPES
 #define TYPES
 
+#include <float.h>
 #include <stdalign.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define ULL(x) (x##ull)
-#define BIT(x) (ULL(1) << x)
+#define BIT(x)     (1ull << x)
+#define __GENMASK(x) (BIT(x) - 1)
+// mask bits from s to f
+#define GENMASK(s, f) ((~__GENMASK(s)) & __GENMASK(f))
 
 typedef uint8_t u8;
 typedef uint16_t u16;

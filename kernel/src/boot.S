@@ -6,13 +6,19 @@
 _start:
   /* intialize stack */
   // STACK_TOP and STACK_SIZE defined in linker script
-  ldr x1, =STACK_TOP  // x0 = stack_top
-  mov sp, x1          // sp = x0
+  ldr x1, =STACK_TOP  // x1 = stack_top
+  mov sp, x1          // sp = x1
 
   // set base address of EVT
   adr x1, vector_table_el1
   msr vbar_el1, x1
 
+  // enable float support for EL0 and EL1
+  mov x1, 3
+  lsl x1, x1, 20
+  msr cpacr_el1, x1
+
+  // branch to kernel
   bl kmain
   b .
 
@@ -23,99 +29,99 @@ _start:
 vector_table_el1:
 el1_curr_el_sp0_sync:        // The exception handler for a synchronous 
                              // exception from the current EL using SP0.
-  mov w9, 'Q'
+  mov w9, 'A'
   b print_char
 
 .balign 0x80
 el1_curr_el_sp0_irq:         // The exception handler for an IRQ exception
                              // from the current EL using SP0.
-  mov w9, 'R'
+  mov w9, 'B'
   b print_char
 
 .balign 0x80
 el1_curr_el_sp0_fiq:         // The exception handler for an FIQ exception
                              // from the current EL using SP0.
-  mov w9, 'S'
+  mov w9, 'C'
   b print_char
 
 .balign 0x80
 el1_curr_el_sp0_serror:      // The exception handler for a System Error 
                              // exception from the current EL using SP0.
-  mov w9, 'T'
+  mov w9, 'D'
   b print_char
 
 .balign 0x80
 el1_curr_el_spx_sync:        // The exception handler for a synchrous 
                              // exception from the current EL using the
                              // current SP.
-  mov w9, 'U'
+  mov w9, 'E'
   b print_char
 
 .balign 0x80
 el1_curr_el_spx_irq:         // The exception handler for an IRQ exception from 
                              // the current EL using the current SP.
-  mov w9, 'V'
+  mov w9, 'F'
   b print_char
 
 .balign 0x80
 curr_el_spx_fiq:             // The exception handler for an FIQ from 
                              // the current EL using the current SP.
-  mov w9, 'W'
+  mov w9, '1'
   b print_char
 
 .balign 0x80
 el1_curr_el_spx_serror:      // The exception handler for a System Error 
                              // exception from the current EL using the
                              // current SP.
-  mov w9, 'X'
+  mov w9, '2'
   b print_char
 
  .balign 0x80
 el1_lower_el_aarch64_sync:   // The exception handler for a synchronous 
                              // exception from a lower EL (AArch64).
-  mov w9, 'Y'
+  mov w9, '3'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch64_irq:    // The exception handler for an IRQ from a lower EL
                              // (AArch64).
-  mov w9, 'Z'
+  mov w9, '4'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch64_fiq:    // The exception handler for an FIQ from a lower EL
                              // (AArch64).
-  mov w9, '1'
+  mov w9, '5'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch64_serror: // The exception handler for a System Error 
                              // exception from a lower EL(AArch64).
-  mov w9, '2'
+  mov w9, '6'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch32_sync:   // The exception handler for a synchronous 
                              // exception from a lower EL(AArch32).
-  mov w9, '3'
+  mov w9, '7'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch32_irq:    // The exception handler for an IRQ exception 
                              // from a lower EL (AArch32).
-  mov w9, '4'
+  mov w9, '8'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch32_fiq:    // The exception handler for an FIQ exception from 
                              // a lower EL (AArch32).
-  mov w9, '5'
+  mov w9, '9'
   b print_char
 
 .balign 0x80
 el1_lower_el_aarch32_serror: // The exception handler for a System Error
                              // exception from a lower EL(AArch32).
-  mov w9, '6'
+  mov w9, 'Z'
   b print_char
 
 print_char:
