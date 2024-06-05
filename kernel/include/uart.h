@@ -4,10 +4,10 @@
 #include "types.h"
 
 // pl011 - Peripheral Controller
-// address deduced from dump of device tree blob (dtb)
-#define UART_BAUD_RATE   115200ull
-#define UART_BASE_ADDRES 0x9000000ull
-#define UART_CLOCK       24000000ull
+// address and clock deduced from dump of device tree blob (dtb)
+#define UART_BAUD_RATE   U64(115200)
+#define UART_BASE_ADDRES U64(0x9000000)
+#define UART_CLOCK       U64(24000000)
 
 /* pl011 UART register offset table */
 #define UART_DR      0x00
@@ -18,46 +18,28 @@
 #define UART_FBRD    0x28
 #define UART_LCRH    0x2C
 #define UART_CR      0x30
-#define UART_IFLS    0x34
-#define UART_IMSC    0x38
-#define UART_RIS     0x3C
-#define UART_MIS     0x40
-#define UART_ICR     0x44
+#define UART_IFLS    0x34  
+#define UART_IMSC    0x38  
+#define UART_RIS     0x3C  
+#define UART_MIS     0x40 
+#define UART_ICR     0x44 
 #define UART_DMACR   0x48
 
-typedef enum {
-  REG_DR,
-  REG_RSR,
-  REG_ESR,
-  REG_FR,
-  REG_IBRD,
-  REG_FBRD,
-  REG_LCRH,
-  REG_CR,
-  REG_IFLS,
-  REG_IMSC,
-  REG_RIS,
-  REG_MIS,
-  REG_ICR,
-  REG_DMACR,
-} uart_reg;
-
-static const u16 pl011_offsets[] = {
-  [REG_DR]    = UART_DR,
-  [REG_RSR]   = UART_RSR,
-  [REG_ESR]   = UART_ESR,
-  [REG_FR]    = UART_FR,
-  [REG_IBRD]  = UART_IBRD,
-  [REG_FBRD]  = UART_FBRD,
-  [REG_LCRH]  = UART_LCRH,
-  [REG_CR]    = UART_CR,
-  [REG_IFLS]  = UART_IFLS,
-  [REG_IMSC]  = UART_IMSC,
-  [REG_RIS]   = UART_RIS,
-  [REG_MIS]   = UART_MIS,
-  [REG_ICR]   = UART_ICR,
-  [REG_DMACR] = UART_DMACR,
-};
+/* pl011 UART register mask table */
+#define UART_DR_MASK      GENMASK(0, 12)
+#define UART_RSR_MASK     GENMASK(0, 4)
+#define UART_ESR_MASK     GENMASK(0, 4)
+#define UART_FR_MASK      GENMASK(0, 9)
+#define UART_IBRD_MASK    GENMASK(0, 16)
+#define UART_FBRD_MASK    GENMASK(0, 6)
+#define UART_LCRH_MASK    GENMASK(0, 8)
+#define UART_CR_MASK      (GENMASK(0, 3) | GENMASK(7, 16))
+#define UART_IFLS_MASK    GENMASK(0, 6)
+#define UART_IMSC_MASK    GENMASK(0, 11)
+#define UART_RIS_MASK     GENMASK(0, 11)
+#define UART_MIS_MASK     GENMASK(0, 11)
+#define UART_ICR_MASK     GENMASK(0, 11)
+#define UART_DMACR_MASK   GENMASK(0, 3)
 
 // Data register
 #define UART_DR_FE        BIT(8)
@@ -112,6 +94,19 @@ static const u16 pl011_offsets[] = {
 #define UART_CR_OUT2      BIT(13)
 #define UART_CR_RTSEn     BIT(14)
 #define UART_CR_CTSEn     BIT(15)
+
+// IFLS
+#define UART_IFLS_RX_1_8  0x0
+#define UART_IFLS_RX_1_4  (0x1 << 3)
+#define UART_IFLS_RX_1_2  (0x2 << 3)
+#define UART_IFLS_RX_3_4  (0x3 << 3)
+#define UART_IFLS_RX_7_8  (0x4 << 3)
+
+#define UART_IFLS_TX_1_8  0x0
+#define UART_IFLS_TX_1_4  0x1
+#define UART_IFLS_TX_1_2  0x2
+#define UART_IFLS_TX_3_4  0x3
+#define UART_IFLS_TX_7_8  0x4
 
 // IMSC
 #define UART_IMSC_RIMIM   BIT(0)
@@ -170,40 +165,47 @@ static const u16 pl011_offsets[] = {
 #define UART_DMACR_TXDMAE   BIT(1)
 #define UART_DMACR_DMAONERR BIT(2)
 
-inline static void *get_register(uart_reg reg) {
-  return (void *)(UART_BASE_ADDRES + pl011_offsets[reg]);
-}
+enum {
+  REG_DR,
+  REG_RSR,
+  REG_ESR,
+  REG_FR,
+  REG_IBRD,
+  REG_FBRD,
+  REG_LCRH,
+  REG_CR,
+  REG_IFLS,
+  REG_IMSC,
+  REG_RIS,
+  REG_MIS,
+  REG_ICR,
+  REG_DMACR,
+};
 
-static void uart_setup() {
-  u16 *uart_cr = get_register(REG_CR);
-  u16 *uart_ibrd = get_register(REG_IBRD);
-  u8 *uart_fr = get_register(REG_FR);
-  u8 *uart_lcrh = get_register(REG_LCRH);
-  u8 *uart_fbrd = get_register(REG_FBRD);
+struct uart_reg {
+  u32 mask;   // mask bits that must not be red/written
+  u32 offset; // offset from base
+};
 
-  // disable uart (just in case)
-  *uart_cr = (~UART_CR_UARTEN & *uart_cr);
+static const struct uart_reg pl011_offsets[] = {
+  [REG_DR]    = {.offset = UART_DR,   .mask = UART_DR_MASK},
+  [REG_RSR]   = {.offset = UART_RSR,  .mask = UART_RSR_MASK},
+  [REG_ESR]   = {.offset = UART_ESR,  .mask = UART_ESR_MASK},
+  [REG_FR]    = {.offset = UART_FR,   .mask = UART_FR_MASK},
+  [REG_IBRD]  = {.offset = UART_IBRD, .mask = UART_IBRD_MASK},
+  [REG_FBRD]  = {.offset = UART_FBRD, .mask = UART_FBRD_MASK},
+  [REG_LCRH]  = {.offset = UART_LCRH, .mask = UART_LCRH_MASK},
+  [REG_CR]    = {.offset = UART_CR,   .mask = UART_CR_MASK},
+  [REG_IFLS]  = {.offset = UART_IFLS, .mask = UART_IFLS_MASK},
+  [REG_IMSC]  = {.offset = UART_IMSC, .mask = UART_IMSC_MASK},
+  [REG_RIS]   = {.offset = UART_RIS,  .mask = UART_RIS_MASK},
+  [REG_MIS]   = {.offset = UART_MIS,  .mask = UART_MIS_MASK},
+  [REG_ICR]   = {.offset = UART_ICR,  .mask = UART_ICR_MASK},
+  [REG_DMACR] = {.offset = UART_DMACR,.mask = UART_DMACR_MASK},
+};
 
-  // uart busy wait
-  while (UART_FR_BUSY & *uart_fr) {}
-
-  // setting baud_rate
-  const float baud_rate = (float)UART_CLOCK / (16 * UART_BAUD_RATE);
-  *uart_ibrd = (u16)baud_rate; // store int part
-                               
-  // fbrd is only 6 bits
-  // set all fbrd bits to 0 and leave last 2 bits untouched 
-  *uart_fbrd &= 3; 
-
-  // mask extracts mantisa from baud_rate
-  // fbrd only 6 bits so shift by 
-  u32 l = GENMASK(0, 23) & *(u32*)&baud_rate;
-
-  // flush transmit FIFO
-  *uart_lcrh = (~UART_LCRH_FEN & *uart_lcrh);
-}
-
-static void uart_write_byte(u8 data) {}
-static void uart_write(const u8 *data, u32 size) {}
+void uart_setup();
+void uart_write_byte(u8 data);
+void uart_write(const u8 *data, u32 size);
 
 #endif /* UART */

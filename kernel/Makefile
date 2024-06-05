@@ -21,7 +21,7 @@ SRCS    := $(wildcard $(SRCDIR)/*)
 OBJECTS := $(patsubst $(SRCDIR)/%,$(OBJDIR)/%.o,$(SRCS))
 
 .PHONY: all clean distclean qemu qemu-debug
-all:$(TARGET_DIR) $(TARGET) 
+all: $(OBJDIR) $(TARGET_DIR) $(TARGET) 
 
 $(OBJDIR):
 	mkdir $@
@@ -29,7 +29,7 @@ $(OBJDIR):
 $(TARGET_DIR):
 	mkdir $@
 
-$(OBJDIR)/%.o: $(SRCDIR)/% $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJECTS)
