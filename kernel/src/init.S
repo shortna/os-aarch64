@@ -9,6 +9,10 @@ _start:
   ldr x1, =STACK_TOP  // x1 = stack_top
   mov sp, x1          // sp = x1
 
+  // store dtb address in stack
+  str x0, [sp, -0x10]
+  sub sp, sp, 0x10
+
   // set base address of EVT
   adr x1, vector_table_el1
   msr vbar_el1, x1
@@ -17,6 +21,10 @@ _start:
   mov x1, 3
   lsl x1, x1, 20
   msr cpacr_el1, x1
+
+  // enable system register support for EL1
+  mov x1, 7
+  msr icc_sre_el1, x1
 
   // branch to kernel
   bl kmain
@@ -124,8 +132,29 @@ el1_lower_el_aarch32_serror: // The exception handler for a System Error
   mov w9, 'Z'
   b print_char
 
+.set UART,0x9000000
 print_char:
-  ldr x1, =0x9000000
+  ldr x1, =UART
   strb w9, [x1]
   b .
 
+.global __reverse_u16
+.global __reverse_u32
+.global __reverse_u64
+
+// nubmer in x0
+.type __reverse_u16, @function
+.type __reverse_u32, @function
+.type __reverse_u64, @function
+
+__reverse_u16:
+  rev16 x0, x0
+  ret
+
+__reverse_u32:
+  rev32 x0, x0
+  ret
+
+__reverse_u64:
+  rev64 x0, x0
+  ret

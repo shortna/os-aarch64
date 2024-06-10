@@ -1,13 +1,10 @@
-#ifndef UART
-#define UART
+#ifndef _UART_DEFS_H
+#define _UART_DEFS_H
 
 #include "types.h"
 
 // pl011 - Peripheral Controller
 // address and clock deduced from dump of device tree blob (dtb)
-#define UART_BAUD_RATE   U64(115200)
-#define UART_BASE_ADDRES U64(0x9000000)
-#define UART_CLOCK       U64(24000000)
 
 /* pl011 UART register offset table */
 #define UART_DR      0x00
@@ -183,11 +180,11 @@ enum {
 };
 
 struct uart_reg {
-  u32 mask;   // mask bits that must not be red/written
   u32 offset; // offset from base
+  u32 mask;   // mask bits that must not be red/written
 };
 
-static const struct uart_reg pl011_offsets[] = {
+static const struct uart_reg uart_regs[] = {
   [REG_DR]    = {.offset = UART_DR,   .mask = UART_DR_MASK},
   [REG_RSR]   = {.offset = UART_RSR,  .mask = UART_RSR_MASK},
   [REG_ESR]   = {.offset = UART_ESR,  .mask = UART_ESR_MASK},
@@ -204,8 +201,4 @@ static const struct uart_reg pl011_offsets[] = {
   [REG_DMACR] = {.offset = UART_DMACR,.mask = UART_DMACR_MASK},
 };
 
-void uart_setup();
-void uart_write_byte(u8 data);
-void uart_write(const u8 *data, u32 size);
-
-#endif /* UART */
+#endif /* UART_DEFS */
