@@ -33,12 +33,3 @@ u32 strlen(u8 *s) {
   }
   return i;
 }
-
-u64 str_to_num(u8 *s) {
-  u64 n = 0;
-  while (*s) {
-    n = n * 10 + (*s - '0');
-    s++;
-  }
-  return n;
-}

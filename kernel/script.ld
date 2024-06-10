@@ -11,4 +11,5 @@ SECTIONS
   .data : { *(.data) }
   .bss : { *(.bss COMMON) }
   . = ALIGN(8);   /* in case previous data ended on not aligned address */
+  FREE_MEMORY = .;
 }

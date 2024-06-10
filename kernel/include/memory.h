@@ -8,9 +8,4 @@
 extern void *memalloc(u32 size);
 extern void memfree(void *p);
 
-/*
- * Sets `address` of memory chunk so it can be allocated
- */
-extern void set_memory_address(u64 address);
-
 #endif

@@ -1,10 +1,6 @@
 #include "uart/uart.h"
 #include "uart/uart_internal.h"
 
-static u64 UART_BASE_ADDRESS = 0;
-static u64 UART_CLOCK = 0;
-static u64 UART_BAUD_RATE = 0;
-
 inline static struct uart_reg get_register(u16 reg) { return uart_regs[reg]; }
 
 inline static void pl011_write_register(u16 reg, u32 value) {
@@ -21,11 +17,7 @@ inline static u32 pl011_read_register(u16 reg) {
   return *mem & r.mask;
 }
 
-void uart_setup(u64 base_address, u64 clock, u64 baud_rate) {
-  UART_BAUD_RATE = baud_rate;
-  UART_BASE_ADDRESS = base_address;
-  UART_CLOCK = clock;
-
+void uart_setup(u64 baud_rate) {
   // disable uart with remaining transmit bits
   pl011_write_register(REG_CR, UART_CR_TXE | UART_CR_RXE);
 
@@ -34,7 +26,7 @@ void uart_setup(u64 base_address, u64 clock, u64 baud_rate) {
   }
 
   // setting baud_rate
-  const float baud_div = (float)UART_CLOCK / (16 * UART_BAUD_RATE);
+  const float baud_div = (float)UART_CLOCK / (16 * baud_rate);
   pl011_write_register(REG_IBRD, (u16)baud_div);
 
   // extracts fractional bits from baud_rate

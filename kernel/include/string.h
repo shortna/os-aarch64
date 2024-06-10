@@ -14,11 +14,6 @@ extern void memset(void *p, u32 n, u8 value);
 extern bool memcmp(void *a, void *b, u32 n);
 
 /*
- * converts string number representation to number
- */
-extern u64 str_to_num(u8 *s);
-
-/*
  * Finds byte `b` in `p` and places in `res`.
  * Scans at most `n` bytes.
  */

@@ -9,10 +9,6 @@ _start:
   ldr x1, =STACK_TOP  // x1 = stack_top
   mov sp, x1          // sp = x1
 
-  // store dtb address in stack
-  str x0, [sp, -0x10]
-  sub sp, sp, 0x10
-
   // set base address of EVT
   adr x1, vector_table_el1
   msr vbar_el1, x1

@@ -5,6 +5,8 @@
 
 // pl011 - Peripheral Controller
 // address and clock deduced from dump of device tree blob (dtb)
+#define UART_CLOCK U64(0x16e3600)
+#define UART_BASE_ADDRESS U64(9000000)
 
 /* pl011 UART register offset table */
 #define UART_DR      0x00
