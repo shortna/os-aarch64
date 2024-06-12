@@ -1,5 +1,5 @@
 // KERNEL ENTRY CODE
-.section .text
+.section .init
 .global _start
 
 // Thanks to qemu -kernel option, we already start at el1
