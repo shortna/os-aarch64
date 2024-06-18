@@ -4,7 +4,7 @@
 #include "types.h"
 #define PRINT(x) uart_write((const u8 *)x, sizeof(x))
 
-extern void uart_setup(u64 baud_rate);
+extern void uart_setup(volatile void *base, u64 baud_rate);
 extern void uart_write_byte(u8 data);
 extern void uart_write(const u8 *data, u32 size);
 extern u8 uart_read_byte(void);

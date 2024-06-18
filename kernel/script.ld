@@ -6,13 +6,14 @@ MEMORY {
 }
 SECTIONS
 {
-  STACK_SIZE = 0x400;
-  . = ORIGIN(FLASH) + STACK_SIZE;
-  STACK_TOP = .;
- 
   .init : { *(.init) } > RAM
+  .tables : {*(.table*)} > RAM
   .text : { *(.text) } > RAM
   .data : { *(.data) } > RAM
   .bss  : { *(.bss COMMON) } > RAM
   . = ALIGN(8);
+
+  STACK_SIZE = 0x400;
+  . = . + STACK_SIZE;
+  STACK_TOP = .;
 }

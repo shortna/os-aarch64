@@ -1,12 +1,9 @@
 #ifndef _UART_DEFS_H
 #define _UART_DEFS_H
 
-#include "types.h"
-
 // pl011 - Peripheral Controller
 // address and clock deduced from dump of device tree blob (dtb)
 #define UART_CLOCK U64(0x16e3600)
-#define UART_BASE_ADDRESS U64(9000000)
 
 /* pl011 UART register offset table */
 #define UART_DR      0x00
@@ -23,22 +20,6 @@
 #define UART_MIS     0x40 
 #define UART_ICR     0x44 
 #define UART_DMACR   0x48
-
-/* pl011 UART register mask table */
-#define UART_DR_MASK      GENMASK(0, 12)
-#define UART_RSR_MASK     GENMASK(0, 4)
-#define UART_ESR_MASK     GENMASK(0, 4)
-#define UART_FR_MASK      GENMASK(0, 9)
-#define UART_IBRD_MASK    GENMASK(0, 16)
-#define UART_FBRD_MASK    GENMASK(0, 6)
-#define UART_LCRH_MASK    GENMASK(0, 8)
-#define UART_CR_MASK      (GENMASK(0, 3) | GENMASK(7, 16))
-#define UART_IFLS_MASK    GENMASK(0, 6)
-#define UART_IMSC_MASK    GENMASK(0, 11)
-#define UART_RIS_MASK     GENMASK(0, 11)
-#define UART_MIS_MASK     GENMASK(0, 11)
-#define UART_ICR_MASK     GENMASK(0, 11)
-#define UART_DMACR_MASK   GENMASK(0, 3)
 
 // Data register
 #define UART_DR_FE        BIT(8)
@@ -164,43 +145,4 @@
 #define UART_DMACR_TXDMAE   BIT(1)
 #define UART_DMACR_DMAONERR BIT(2)
 
-enum {
-  REG_DR,
-  REG_RSR,
-  REG_ESR,
-  REG_FR,
-  REG_IBRD,
-  REG_FBRD,
-  REG_LCRH,
-  REG_CR,
-  REG_IFLS,
-  REG_IMSC,
-  REG_RIS,
-  REG_MIS,
-  REG_ICR,
-  REG_DMACR,
-};
-
-struct uart_reg {
-  u32 offset; // offset from base
-  u32 mask;   // mask bits that must not be red/written
-};
-
-static const struct uart_reg uart_regs[] = {
-  [REG_DR]    = {.offset = UART_DR,   .mask = UART_DR_MASK},
-  [REG_RSR]   = {.offset = UART_RSR,  .mask = UART_RSR_MASK},
-  [REG_ESR]   = {.offset = UART_ESR,  .mask = UART_ESR_MASK},
-  [REG_FR]    = {.offset = UART_FR,   .mask = UART_FR_MASK},
-  [REG_IBRD]  = {.offset = UART_IBRD, .mask = UART_IBRD_MASK},
-  [REG_FBRD]  = {.offset = UART_FBRD, .mask = UART_FBRD_MASK},
-  [REG_LCRH]  = {.offset = UART_LCRH, .mask = UART_LCRH_MASK},
-  [REG_CR]    = {.offset = UART_CR,   .mask = UART_CR_MASK},
-  [REG_IFLS]  = {.offset = UART_IFLS, .mask = UART_IFLS_MASK},
-  [REG_IMSC]  = {.offset = UART_IMSC, .mask = UART_IMSC_MASK},
-  [REG_RIS]   = {.offset = UART_RIS,  .mask = UART_RIS_MASK},
-  [REG_MIS]   = {.offset = UART_MIS,  .mask = UART_MIS_MASK},
-  [REG_ICR]   = {.offset = UART_ICR,  .mask = UART_ICR_MASK},
-  [REG_DMACR] = {.offset = UART_DMACR,.mask = UART_DMACR_MASK},
-};
-
-#endif /* UART_DEFS */
+#endif

@@ -1,57 +1,58 @@
 #include "uart/uart.h"
 #include "uart/uart_internal.h"
 
-inline static struct uart_reg get_register(u16 reg) { return uart_regs[reg]; }
+static volatile void *UART_BASE;
 
-inline static void pl011_write_register(u16 reg, u32 value) {
-  struct uart_reg r = get_register(reg);
-  volatile u32 *mem = (void *)(UART_BASE_ADDRESS + r.offset);
-  // (*mem & ~r.mask) - clears bits that can be modified and preserves that
-  // can`t (value & r.mask) - removes bits from value that should not be there
-  *mem = (*mem & ~r.mask) | (value & r.mask);
-}
+void uart_setup(volatile void *uart_base, u64 baud_rate) {
+  UART_BASE = uart_base;
+  u32 tmp_reg;
 
-inline static u32 pl011_read_register(u16 reg) {
-  struct uart_reg r = get_register(reg);
-  volatile u32 *mem = (void *)(UART_BASE_ADDRESS + r.offset);
-  return *mem & r.mask;
-}
-
-void uart_setup(u64 baud_rate) {
-  // disable uart with remaining transmit bits
-  pl011_write_register(REG_CR, UART_CR_TXE | UART_CR_RXE);
+  // disable uart
+  tmp_reg = mmio_register_read(UART_BASE, UART_CR) & ~U32(1);
+  mmio_register_write(UART_BASE, UART_CR, tmp_reg);
 
   // uart busy, wait
-  while (pl011_read_register(REG_FR) & UART_FR_BUSY) {
-  }
+  while (mmio_register_read(UART_BASE, UART_FR) & UART_FR_BUSY) {}
 
   // setting baud_rate
   const float baud_div = (float)UART_CLOCK / (16 * baud_rate);
-  pl011_write_register(REG_IBRD, (u16)baud_div);
+  mmio_register_write(UART_BASE, UART_IBRD, (u16)baud_div);
 
   // extracts fractional bits from baud_rate
   // then multiplies by 2^n where n is 6 because fbrd 6 bits wide
   // and adds 0.5 to account for rounding error
-  pl011_write_register(REG_FBRD, (u8)((baud_div - (u16)baud_div) * 64 + 0.5));
+  mmio_register_write(UART_BASE, UART_FBRD, (u8)((baud_div - (u16)baud_div) * 64 + 0.5));
 
   // disable everything and flush transmit FIFO
-  pl011_write_register(REG_LCRH, 0);
+  tmp_reg = mmio_register_read(UART_BASE, UART_LCRH);
+  mmio_register_write(UART_BASE, UART_LCRH, bits_clear(tmp_reg, 0, 8));
 
   // change lcrh
-  pl011_write_register(REG_LCRH, UART_LCRH_FEN);
+  tmp_reg |= UART_LCRH_WLEN8 | UART_LCRH_FEN;
+  mmio_register_write(UART_BASE, UART_LCRH, tmp_reg);
+
+  // set flood level
+  tmp_reg = mmio_register_read(UART_BASE, UART_IFLS);
+  tmp_reg |= UART_IFLS_RX_1_4 | UART_IFLS_TX_1_4;
+  mmio_register_write(UART_BASE, UART_IFLS, tmp_reg);
+
+  // enable interrupts
+  tmp_reg = mmio_register_read(UART_BASE, UART_IMSC);
+  tmp_reg &= ~(BIT(11) - 1);
+  mmio_register_write(UART_BASE, UART_IMSC, tmp_reg);
 
   // change cr parameters to receive & transmit + flow control for both
-  pl011_write_register(REG_CR, UART_CR_TXE | UART_CR_RXE);
-
-  // mask all interrupts
-  pl011_write_register(REG_IMSC, 0x3ff);
+  tmp_reg = mmio_register_read(UART_BASE, UART_CR);
+  tmp_reg |= UART_CR_TXE | UART_CR_RXE | UART_CR_RTSEn | UART_CR_CTSEn;
+  mmio_register_write(UART_BASE, UART_CR, tmp_reg);
 
   // enable uart
-  pl011_write_register(REG_CR, UART_CR_UARTEN);
+  mmio_register_write(UART_BASE, UART_CR, tmp_reg | 1);
 }
 
 inline void uart_write_byte(u8 data) {
-  pl011_write_register(REG_DR, data); // data
+  u32 tmp = mmio_register_read(UART_BASE, UART_DR) | data;
+  mmio_register_write(UART_BASE, UART_DR, tmp);
 }
 
 void uart_write(const u8 *data, u32 size) {
