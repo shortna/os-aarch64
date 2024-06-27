@@ -28,7 +28,6 @@ _start:
   orr x0, x0, (3 << 20)
   msr cpacr_el1, x0
 
-
   // Ensure changes to system register are visible
   isb
 
@@ -51,6 +50,7 @@ getAffinity:
 .global setPriorityMask
 setPriorityMask:
   mrs x1, icc_pmr_el1
+  bfc x1, 0, 8
   orr x1, x1, x0
   msr icc_pmr_el1, x1
   ret
@@ -92,3 +92,5 @@ configureICC:
   orr x0, x0, 3 // enables bits [0:1]
   msr icc_ctlr_el1, x0
   ret 
+
+
