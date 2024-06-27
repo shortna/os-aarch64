@@ -7,6 +7,7 @@ MEMORY {
 SECTIONS
 {
   .init : { *(.init) } > RAM
+  . = ALIGN(0x800);
   .tables : {*(.table*)} > RAM
   .text : { *(.text) } > RAM
   .data : { *(.data) } > RAM
