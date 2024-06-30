@@ -3,10 +3,9 @@
 
 #include "types.h"
 
-#define RTC_CR_START    BIT(0)
-#define RTC_IM_SET_MASK BIT(0)
-#define RTC_IM_CLR_MASK (~1)
-#define RTC_INT_CLR     BIT(0)
+#define RTC_IM_SET_MASK (1)
+#define RTC_IM_CLR_MASK (0)
+#define RTC_INT_CLR     (1)
 
 struct RTC {
   const volatile u32 DR;                                            /* +0x000 */

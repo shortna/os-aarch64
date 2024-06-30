@@ -10,14 +10,11 @@
 struct RTC;
 typedef struct RTC *RTC;
 
-// clear rtc interrupt and return interface for rtc
+// return interface for rtc
 extern RTC rtc(u64 rtc_base);
 
-// fully resets rtc
+// reset rtc
 extern void rtc_reset(RTC r);
-
-// enable rtc
-extern void rtc_enable(RTC r);
 
 // get current rtc value
 extern u32 rtc_get_current(RTC r);
