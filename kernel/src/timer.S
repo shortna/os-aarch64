@@ -1,8 +1,14 @@
 .section .text
 
-.global timer_physical_value
-.type timer_physical_value, @function
-timer_physical_value:
+.global timer_system_get_frequency
+.type timer_system_get_frequency, @function
+timer_system_get_frequency:
+  mrs x0, cntfrq_el0
+  ret
+
+.global timer_physical_get_value
+.type timer_physical_get_value, @function
+timer_physical_get_value:
   mrs x0, cntpct_el0
   ret
 
@@ -13,9 +19,9 @@ timer_physical_enable:
   msr cntp_ctl_el0, x1
   ret
 
-.global timer_physical_absolute_threshold
-.type timer_physical_absolute_threshold, @function
-timer_physical_absolute_threshold:
+.global timer_physical_set_threshold
+.type timer_physical_set_threshold, @function
+timer_physical_set_threshold:
   msr cntp_cval_el0, x0
   ret
 
@@ -27,7 +33,7 @@ timer_physical_add_threshold:
 
 .global timer_physical_time_passed
 .type timer_physical_time_passed, @function
-timer_physical_:
+timer_physical_time_passed:
   mrs x0, cntp_tval_el0
   ret
 

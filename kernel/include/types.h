@@ -35,8 +35,8 @@ static inline u32 mmio_register_read(volatile void *base, u32 offset) {
 }
 
 // clears `width` bits in `value` from `start_bit` 
-static inline u32 bits_clear(u32 value, u8 start_bit, u8 width) {
-  __asm__ volatile("bic %w0, %w1, %w2"
+static inline u64 bits_clear(u64 value, u8 start_bit, u8 width) {
+  __asm__ volatile("bic %0, %1, %2"
                    : "=r"(value)
                    : "r"(start_bit), "r"(width));
   return value;
