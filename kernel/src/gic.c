@@ -121,8 +121,15 @@ void int_set_triger(GICD dist, GICR redists, u32 int_id, u32 redist_id,
 }
 
 void int_set_route(GICD dist, u32 int_id, u32 affinity) {
-  dist->GICD_IROUTER[int_id] = (U64(affinity & 0xff000000) << 32) |
-                               U64(1 << 31) | U64(affinity & 0x00ffffff);
+  u64 int_route = dist->GICD_IROUTER[int_id];
+
+  int_route &= ~BIT(31); // enable routing mode
+  int_route = bits_clear(int_route, 32, 8);
+  int_route = bits_clear(int_route, 0, 24);
+  int_route |= (U64(affinity & 0xff000000) << 32) | U64(affinity & 0x00ffffff);
+
+  dist->GICD_IROUTER[int_id] = int_route;
+      
 }
 
 void int_enable(GICD dist, GICR redists, u32 int_id, u32 redist_id) {
