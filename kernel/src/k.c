@@ -20,6 +20,7 @@ extern void timer_physical_enable(void);
 extern void timer_physical_set_threshold(u64 t);
 extern void timer_physical_add_threshold(u32 t);
 extern u32 timer_physical_time_passed(void);
+extern u32 get_int_id(void);
 
 void kmain() {
   GICD dist = gicd(GICD_BASE_ADDRESS);
@@ -53,7 +54,6 @@ void kmain() {
   timer_physical_enable();
 */
 
-/*
   // pl031 interrupts
   // interrupts = <0x00 0x02 0x04>;
   u8 pl031_int = 34;
@@ -64,10 +64,10 @@ void kmain() {
 
   RTC r = rtc(RTC_BASE_ADDRESS);
   rtc_reset(r);
-  rtc_set_match(r, rtc_get_current(r) + MINUTE);
+  rtc_set_match(r, rtc_get_current(r) + 5);
   rtc_enable_interrupt(r);
-*/
 
+/*
   // pl011 interrupts
   // uart_interrupts = <0x00 0x01 0x04>;
   u8 pl011_int = 33;
@@ -82,7 +82,17 @@ void kmain() {
   for (u8 i = 'A'; i < 'z'; i++) {
     uart_write_byte(uart0, i);
   }
+*/
 
   while (1);
+}
+
+void clear_source(u32 int_id) {
+}
+
+void handle(void) {
+  u32 int_id = get_int_id();
+  clear_source(int_id);
+  while(1);
 }
 
