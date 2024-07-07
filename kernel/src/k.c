@@ -1,8 +1,7 @@
 #include "drivers/gic/gic.h"
-#include "drivers/rtc/rtc.h"
-#include "fdt.h"
-#include "drivers/uart/uart.h"
-#include "drivers/time_physical.h"
+//#include "drivers/rtc/rtc.h"
+//#include "drivers/time_physical.h"
+//#include "drivers/uart/uart.h"
 
 // 24MHz
 #define APB_CLOCK U64(24000000)
@@ -16,23 +15,10 @@
 #define GICD_BASE_ADDRESS U64(0x8000000)
 #define GICR_BASE_ADDRESS U64(0x80a0000)
 
+// array of function pointers
 void kmain(u64 fdt_address) {
   /* GET INFO FROM FDT */
-  bool err = false;
-  FDT t = fdt_init(fdt_address, &err);
-  if (err) {
-    while(1);
-  }
-
-  u32 size_cells;
-  u32 address_cells;
-
-  struct FdtNode node;
-  struct FdtProperty property;
-  while (fdt_get_node(t, &node)) {
-    while (fdt_get_property(t, &node, &property)) {
-    }
-  }
+  // fdt_walk(fdt_address);
 
   /* ENBALE INTERRUPT ROUTING */
   u32 redist_id = get_redistributor_id(GICR_BASE_ADDRESS, get_affinity());

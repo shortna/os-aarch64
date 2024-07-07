@@ -10,7 +10,7 @@ INCLUDE_DIR = include
 
 LD_SCRIPT := script.ld
 CFLAGS    := -std=c99 -nostdlib -ffreestanding -Wall -Wextra -g -I $(INCLUDE_DIR)
-QEMUFLAGS := -nographic -no-reboot -machine virt-9.0,gic-version=3 -cpu cortex-a57 -m 64K -serial mon:stdio
+QEMUFLAGS := -nographic -no-reboot -cpu cortex-a57 -m 64K -serial mon:stdio -machine virt-9.0,gic-version=3
 
 CC      := ../aarch64-none-elf/bin/aarch64-none-elf-gcc
 AS      := ../aarch64-none-elf/bin/aarch64-none-elf-as
@@ -46,3 +46,7 @@ qemu: all
 
 qemu-debug: all
 	qemu-system-aarch64 -s -S $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
+
+qemu-dtb: 
+	qemu-system-aarch64 $(QEMUFLAGS) -machine dumpdtb=dtb
+
