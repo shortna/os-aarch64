@@ -1,6 +1,6 @@
 #include "drivers/gic/gic.h"
 #include "drivers/rtc/rtc.h"
-#include "fdt/fdt.h"
+#include "fdt.h"
 #include "drivers/uart/uart.h"
 #include "drivers/time_physical.h"
 
