@@ -23,21 +23,4 @@ typedef int64_t i64;
 #define U32(x) ((u32)(x))
 #define U64(x) ((u64)(x))
 
-#define BIT(x) (U64(1) << (x))
-
-static inline void mmio_register_write(volatile void *base, u32 offset, u32 value) {
-  volatile u32 *addr = base + offset;
-  *addr = value;
-}
-
-static inline u32 mmio_register_read(volatile void *base, u32 offset) {
-  return *(volatile u32 *)(base + offset);
-}
-
-// clears `width` bits in `value` from `start_bit` 
-static inline u64 bits_clear(u64 value, u8 start_bit, u8 width) {
-  u64 mask = (BIT(width) - 1) << start_bit;
-  return value & ~mask;
-}
-
 #endif /* TYPES */

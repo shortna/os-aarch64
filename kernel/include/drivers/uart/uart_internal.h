@@ -1,7 +1,7 @@
 #ifndef _UART_DEFS_H
 #define _UART_DEFS_H
 
-#include "types.h"
+#include "bits.h"
 
 // pl011 - Peripheral Controller
 // address and clock deduced from dump of device tree blob (dtb)
@@ -130,7 +130,7 @@
 #define UART_DMACR_TXDMAE   BIT(1)
 #define UART_DMACR_DMAONERR BIT(2)
 
-struct Uart {
+struct UART {
   volatile u32 DR;                                                  /* +0x000 */
   volatile u32 RSR_ESR;                                             /* +0x004 */
   const volatile u8 padding_0[16];                                  /* +0x008 */

@@ -2,6 +2,8 @@
 .global _start
 
 _start:
+  // save fdt base
+  mov x2, x0
   // check CurrentEL
   mrs x0, CurrentEL
   ubfx x1, x0, 2, 2 
@@ -32,6 +34,8 @@ _start:
   // unmask IRQ and FIQ in DAIF register
   msr DAIFClr, 0x3
 
+  // restore fdt base, and pass as first argument to kmain
+  mov x0, x2
   // branch to kernel
   bl kmain
   b .

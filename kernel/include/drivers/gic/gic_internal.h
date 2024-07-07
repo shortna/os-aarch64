@@ -75,7 +75,7 @@ struct GICDv3 {
   const volatile u8 IMPLEMENTATION_DEFINED_2[48];                  /* +0xFFD0 */
 };
 
-struct Redistributor_GICv3_lpis {
+struct GICv3RedistributorLpis {
   volatile u32 CTLR;                                              /* +0x0000 */
   const volatile u32 IIDR;                                        /* +0x0004 */
   const volatile u32 TYPER[2];                                    /* +0x0008 */
@@ -104,7 +104,7 @@ struct Redistributor_GICv3_lpis {
   volatile u8 IMPLEMENTATION_DEFINED_3[48];                       /* +0xFFD0 */
 };
 
-struct Redistributor_GICv3_sgis {
+struct GICv3RedistributorSgis {
   const volatile u8 padding_0[128];                                /* +0x0000 */
   volatile u32 IGROUPR[3];                                         /* +0x0080 */
   const volatile u8 padding_1[116];                                /* +0x008C */
@@ -136,8 +136,8 @@ struct Redistributor_GICv3_sgis {
 
 struct GICRv3 {
   /* each structure is 64Kb, so allign accordingly */
-  struct Redistributor_GICv3_lpis lpis __attribute__((aligned(0x10000)));
-  struct Redistributor_GICv3_sgis sgis __attribute__((aligned(0x10000)));
+  struct GICv3RedistributorLpis lpis __attribute__((aligned(0x10000)));
+  struct GICv3RedistributorSgis sgis __attribute__((aligned(0x10000)));
 };
 
 #endif

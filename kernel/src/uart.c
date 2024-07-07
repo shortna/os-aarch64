@@ -1,9 +1,9 @@
-#include "uart/uart.h"
-#include "uart/uart_internal.h"
+#include "drivers/uart/uart.h"
+#include "drivers/uart/uart_internal.h"
 
-Uart uart_setup(u64 uart_base, u64 uart_clock, u64 baud_rate) {
+UART uart_setup(u64 uart_base, u64 uart_clock, u64 baud_rate) {
   u32 tmp_reg;
-  struct Uart *uart = (void *)uart_base;
+  UART uart = (void *)uart_base;
 
   // disable uart
   tmp_reg = uart->CR;
@@ -13,13 +13,13 @@ Uart uart_setup(u64 uart_base, u64 uart_clock, u64 baud_rate) {
   while (uart->FR & UART_FR_BUSY) {}
 
   // setting baud_rate
-  const float baud_div = (float)uart_clock / (16 * baud_rate);
-  uart->IBRD |= (u16)baud_div;
-
-  // extracts fractional bits from baud_rate
-  // then multiplies by 2^n where n is 6 because fbrd 6 bits wide
-  // and adds 0.5 to account for rounding error
-  uart->FBRD |= (u8)((baud_div - (u16)baud_div) * 64 + 0.5);
+  // since FBRD is 6 bits by multiplying clk / (16 * br) by 64 (1 << 6)
+  // all fractional bits are now integer bits
+  u32 baud_div = 4 * uart_clock / baud_rate;
+  // to get integer lower 6 bits are discarded and 16 bits are taken ibrd
+  uart->IBRD = (baud_div >> 6) & 0xffff;
+  // to get fractional lower 6 bits needs to be extracted
+  uart->FBRD |= baud_div & 0x3f;
 
   // disable everything and flush transmit FIFO
   tmp_reg = uart->LCRH;
@@ -32,51 +32,54 @@ Uart uart_setup(u64 uart_base, u64 uart_clock, u64 baud_rate) {
 
   // set flood level
   tmp_reg = uart->IFLS;
-  tmp_reg |= UART_IFLS_RX_1_4 | UART_IFLS_TX_1_4;
+  tmp_reg &= ~0x1f;
+  tmp_reg |= UART_IFLS_TX_1_2;
   uart->IFLS = tmp_reg;
+
+  // change cr parameters to transmit flow control
+  tmp_reg = uart->CR;
+  tmp_reg &= ~UINT16_MAX;
+  tmp_reg |= UART_CR_TXE;
+  uart->CR = tmp_reg;
 
   // clear interrupts
   uart->ICR |= 0x7ff;
 
-  // enable UARTTXINTR
+  // enable interrupts
   tmp_reg = uart->IMSC;
-  tmp_reg |= BIT(5);
+  tmp_reg |= UART_IMSC_TXIM;
   uart->IMSC = tmp_reg;
 
-  // change cr parameters to receive & transmit + flow control for both
-  tmp_reg = uart->CR;
-  tmp_reg = bits_clear(tmp_reg, 7, 8);
-  tmp_reg |= UART_CR_RTSEn | UART_CR_CTSEn;
-  uart->CR = tmp_reg;
-
-  // enable uart
-  uart->CR |= UART_CR_UARTEN;
   return uart;
 }
 
-void uart_write_byte(Uart uart, u8 data) { 
-  ((struct Uart *)uart)->DR |= data;
+void uart_transmit(UART u) {
+  u->CR |= UART_CR_UARTEN;
 }
 
-void uart_write(Uart uart, const u8 *data, u32 size) {
+void uart_write_byte(UART u, u8 data) { 
+  u->DR |= data;
+}
+
+void uart_write(UART u, const u8 *data, u32 size) {
   for (u32 i = 0; i < size; i++) {
-    uart_write_byte(uart, data[i]);
+    uart_write_byte(u, data[i]);
   }
 }
 
-u8 uart_read_byte(Uart uart) {
-  (void)uart;
+u8 uart_read_byte(UART u) {
+  (void)u;
   return 0;
 }
 
-u32 uart_read(Uart uart, u8 *data, u32 size) {
-  (void)uart;
+u32 uart_read(UART u, u8 *data, u32 size) {
+  (void)u;
   (void)data;
   (void)size;
   return 0;
 }
 
-bool uart_data_avaliable(Uart uart) {
-  (void)uart;
+bool uart_data_avaliable(UART u) {
+  (void)u;
   return false;
 }

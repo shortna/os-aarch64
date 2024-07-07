@@ -1,8 +1,10 @@
-#include "gic/gic.h"
-#include "gic/gic_internal.h"
+#include "drivers/gic/gic.h"
+#include "drivers/gic/gic_internal.h"
+#include "bits.h"
 
-u32 getRedistributorId(GICR redists, u32 affinity) {
+u32 get_redistributor_id(u64 base_address, u32 affinity) {
   u32 ind = 0;
+  struct GICRv3 *redists = (void *)base_address;
 
   do {
     if (redists[ind].lpis.TYPER[1] == affinity) {
@@ -14,19 +16,19 @@ u32 getRedistributorId(GICR redists, u32 affinity) {
   return UINT32_MAX;
 }
 
-void wakeUpRedistributor(GICR redists, u32 redist_id) {
-  u32 tmp = redists[redist_id].lpis.WAKER;
+void wake_redistributor(GICR redist) {
+  u32 tmp = redist->lpis.WAKER;
   tmp &= ~BIT(1);
-  redists[redist_id].lpis.WAKER = tmp;
+  redist->lpis.WAKER = tmp;
 
   do {
-    tmp = redists[redist_id].lpis.WAKER;
+    tmp = redist->lpis.WAKER;
   } while ((tmp & BIT(2)) != 0);
 }
 
 // system support two security states
 // access not secure
-u8 enableGIC(GICD dist) {
+u8 gic_init(GICD dist) {
   if (dist == 0) {
     return 0;
   }
@@ -37,31 +39,32 @@ u8 enableGIC(GICD dist) {
 
   c |= BIT(1); // Enable group1NS
   dist->CTLR = c;
+
+  // enable SRE bits
+  configure_icc();
   return 1;
 }
 
-void int_set_priority(GICD dist, GICR redists, u32 int_id, u32 redist_id,
-                      u8 priority) {
+void int_set_priority(GICD dist, GICR redist, u32 int_id, u8 priority) {
   u32 bank, offset; // offset within register
   bank = int_id / 4;
   offset = int_id & 0x3;
   if (int_id < 31) {
-    redists[redist_id].sgis.IPRIORITYR[bank + offset] = priority;
+    redist->sgis.IPRIORITYR[bank + offset] = priority;
   } else if (int_id < 1020) {
     dist->IPRIORITYR[bank + offset] = priority;
   }
 };
 
-void int_set_group(GICD dist, GICR redists, u32 int_id, u32 redist_id,
-                   u8 security) {
+void int_set_group(GICD dist, GICR redist, u32 int_id, u8 security) {
   u32 bank, bit, group, mod;
   bank = int_id / 32;
   bit = int_id & 0x1f;
   bit = 1 << bit;
 
   if (int_id < 31) {
-    group = redists[redist_id].sgis.IGROUPR[bank];
-    mod = redists[redist_id].sgis.IGRPMODR[bank];
+    group = redist->sgis.IGROUPR[bank];
+    mod = redist->sgis.IGRPMODR[bank];
   } else if (int_id < 1020) {
     group = dist->IGROUPR[bank];
     mod = dist->IGRPMODR[bank];
@@ -87,23 +90,22 @@ void int_set_group(GICD dist, GICR redists, u32 int_id, u32 redist_id,
   }
 
   if (int_id < 31) {
-    redists[redist_id].sgis.IGROUPR[bank] = group;
-    redists[redist_id].sgis.IGRPMODR[bank] = mod;
+    redist->sgis.IGROUPR[bank] = group;
+    redist->sgis.IGRPMODR[bank] = mod;
   } else {
     dist->IGROUPR[bank] = group;
     dist->IGRPMODR[bank] = mod;
   }
 }
 
-void int_set_triger(GICD dist, GICR redists, u32 int_id, u32 redist_id,
-                     u8 triger) {
+void int_set_triger(GICD dist, GICR redist, u32 int_id, u8 triger) {
   u32 bank, bit, tr;
   bank = int_id / 16;
   bit = int_id & 0xf;
   bit *= 2;
 
   if (int_id < 31) {
-    tr = redists[redist_id].sgis.ICFGR[bank];
+    tr = redist->sgis.ICFGR[bank];
   } else if (int_id < 1020) {
     tr = dist->ICFGR[bank];
   } else {
@@ -114,7 +116,7 @@ void int_set_triger(GICD dist, GICR redists, u32 int_id, u32 redist_id,
   tr |= triger << bit;
 
   if (int_id < 31) {
-    redists[redist_id].sgis.ICFGR[bank] = tr;
+    redist->sgis.ICFGR[bank] = tr;
   } else if (int_id < 1020) {
     dist->ICFGR[bank] = tr;
   }
@@ -132,19 +134,32 @@ void int_set_route(GICD dist, u32 int_id, u32 affinity) {
       
 }
 
-void int_enable(GICD dist, GICR redists, u32 int_id, u32 redist_id) {
+void int_enable(GICD dist, GICR redist, u32 int_id) {
   u32 bank, bit;
   bank = int_id / 32;
   bit = int_id & 0x1f;
   bit = 1 << bit;
 
   if (int_id < 31) {
-    redists[redist_id].sgis.ISENABLER[bank] |= bit;
+    redist->sgis.ISENABLER[bank] |= bit;
   } else if (int_id < 1020) {
     dist->ISENABLER[bank] |= bit;
   }
 }
 
-GICD gicd(u64 gicd_base) { return (GICD)gicd_base; }
+GICD get_distributor(u64 gicd_base) { return (GICD)gicd_base; }
 
-GICR gicr(u64 gicr_base) { return (GICR)gicr_base; }
+GICR get_redistributor(u64 gicr_base, u32 redist_id) {
+  return ((GICR)gicr_base) + redist_id;
+}
+
+void register_interrupt(GICD dist, GICR redist, u32 int_id,
+                        struct InterruptParameters p) {
+  int_set_priority(dist, redist, int_id, p.priority);
+  int_set_group(dist, redist, int_id, p.security);
+  int_set_triger(dist, redist, int_id, p.triger);
+  if (p.route) {
+    int_set_route(dist, int_id, p.affinity);
+  }
+  int_enable(dist, redist, int_id);
+}

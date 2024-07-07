@@ -1,5 +1,5 @@
-#include "rtc/rtc_internal.h"
-#include "rtc/rtc.h"
+#include "drivers/rtc/rtc_internal.h"
+#include "drivers/rtc/rtc.h"
 
 RTC rtc(u64 rtc_base) { 
   RTC r = (void *)rtc_base; 

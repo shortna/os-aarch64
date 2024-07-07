@@ -1,6 +1,8 @@
-#include "uart/uart.h"
-#include "rtc/rtc.h"
-#include "gic/gic.h"
+#include "drivers/gic/gic.h"
+#include "drivers/rtc/rtc.h"
+#include "fdt/fdt.h"
+#include "drivers/uart/uart.h"
+#include "drivers/time_physical.h"
 
 // 24MHz
 #define APB_CLOCK U64(24000000)
@@ -14,70 +16,80 @@
 #define GICD_BASE_ADDRESS U64(0x8000000)
 #define GICR_BASE_ADDRESS U64(0x80a0000)
 
-extern u64 timer_system_get_frequency(void);
-extern u64 timer_physical_get_value(void);
-extern void timer_physical_enable(void);
-extern void timer_physical_set_threshold(u64 t);
-extern void timer_physical_add_threshold(u32 t);
-extern u32 timer_physical_time_passed(void);
-extern u32 get_int_id(void);
+void kmain(u64 fdt_address) {
+  /* GET INFO FROM FDT */
+  bool err = false;
+  FDT t = fdt_init(fdt_address, &err);
+  if (err) {
+    while(1);
+  }
 
-void kmain() {
-  GICD dist = gicd(GICD_BASE_ADDRESS);
-  GICR redists = gicr(GICD_BASE_ADDRESS);
+  u32 size_cells;
+  u32 address_cells;
 
-  enableGIC(dist);
+  struct FdtNode node;
+  struct FdtProperty property;
+  while (fdt_get_node(t, &node)) {
+    while (fdt_get_property(t, &node, &property)) {
+    }
+  }
 
-  u32 redistributor_id = getRedistributorId(redists, getAffinity());
-  if (redistributor_id == UINT32_MAX) {
+  /* ENBALE INTERRUPT ROUTING */
+  u32 redist_id = get_redistributor_id(GICR_BASE_ADDRESS, get_affinity());
+  if (redist_id == UINT32_MAX) {
     while (1);
   }
 
-  wakeUpRedistributor(redists, redistributor_id);
+  const GICD dist = get_distributor(GICD_BASE_ADDRESS);
+  gic_init(dist);
 
-  // enable SRE bits 
-  configureICC();
-  setPriorityMask(0xFF);
-  enableGroup0Ints();
-  enableGroup1Ints();
+  GICR redist = get_redistributor(GICR_BASE_ADDRESS, redist_id);
+  wake_redistributor(redist);
+
+  set_priority_mask(0xFF);
+  enable_group0_ints();
+  enable_group1_ints();
 
 /*
   // enable timer
-  // timer_interrupts = <0x01 0x0d 0x04 0x01 0x0e 0x04 0x01 0x0b 0x04 0x01 0x0a 0x04>;
+  // timer_interrupts = <0x01 0x0d 0x04 0x01 0x0e 0x04 0x01 0x0b 0x04 0x01 0x0a
+  // 0x04>;
   u8 physical_counter_ns_int = 30;
-  int_set_priority(dist, redists, physical_counter_ns_int, redistributor_id, 0);
-  int_set_group(dist, redists, physical_counter_ns_int, redistributor_id, GICV3_GROUP1_NON_SECURE);
-  int_set_triger(dist, redists, physical_counter_ns_int, redistributor_id, GICV3_LEVEL_SENSITIVE);
-  int_enable(dist, redists, physical_counter_ns_int, redistributor_id);
+  register_interrupt(dist, redist, physical_counter_ns_int,
+                     (struct InterruptParameters){0, GICV3_GROUP1_NON_SECURE,
+                                                  GICV3_LEVEL_SENSITIVE, false,
+                                                  0});
 
   timer_physical_add_threshold(100);
   timer_physical_enable();
 */
 
+/*
   // pl031 interrupts
   // interrupts = <0x00 0x02 0x04>;
   u8 pl031_int = 34;
-  int_set_priority(dist, redists, pl031_int, redistributor_id, 0);
-  int_set_group(dist, redists, pl031_int, redistributor_id, GICV3_GROUP1_NON_SECURE);
-  int_set_triger(dist, redists, pl031_int, redistributor_id, GICV3_LEVEL_SENSITIVE);
-  int_enable(dist, redists, pl031_int, redistributor_id);
+
+  register_interrupt(dist, redist, pl031_int,
+                     (struct InterruptParameters){0, GICV3_GROUP1_NON_SECURE,
+                                                  GICV3_LEVEL_SENSITIVE, true,
+                                                  get_affinity()});
 
   RTC r = rtc(RTC_BASE_ADDRESS);
   rtc_reset(r);
   rtc_set_match(r, rtc_get_current(r) + 5);
   rtc_enable_interrupt(r);
+*/
 
 /*
   // pl011 interrupts
   // uart_interrupts = <0x00 0x01 0x04>;
   u8 pl011_int = 33;
-  int_set_priority(dist, redists, pl011_int, redistributor_id, 0);
-  int_set_group(dist, redists, pl011_int, redistributor_id, GICV3_GROUP1_NON_SECURE);
-  int_set_triger(dist, redists, pl011_int, redistributor_id, GICV3_LEVEL_SENSITIVE);
-  int_set_route(dist, pl011_int, getAffinity());
-  int_enable(dist, redists, pl011_int, redistributor_id);
+  register_interrupt(dist, redist, pl011_int,
+                     (struct InterruptParameters){0, GICV3_GROUP1_NON_SECURE,
+                                                  GICV3_LEVEL_SENSITIVE, false,
+                                                  0});
 
-  Uart uart0 = uart_setup(UART_BASE_ADDRESS, UART_CLOCK, UART_BAUD_RATE);
+  UART uart0 = uart_setup(UART_BASE_ADDRESS, UART_CLOCK, UART_BAUD_RATE);
 
   for (u8 i = 'A'; i < 'z'; i++) {
     uart_write_byte(uart0, i);
@@ -86,13 +98,3 @@ void kmain() {
 
   while (1);
 }
-
-void clear_source(u32 int_id) {
-}
-
-void handle(void) {
-  u32 int_id = get_int_id();
-  clear_source(int_id);
-  while(1);
-}
-
