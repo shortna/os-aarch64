@@ -6,16 +6,19 @@ MEMORY {
 }
 SECTIONS
 {
-  STACK_FRAME_SIZE = 16;
+  . = ORIGIN(RAM);
   .init : { *(.init) } > RAM
   . = ALIGN(0x800);
   .tables : {*(.table*)} > RAM
   .text : { *(.text) } > RAM
   .data : { *(.data) } > RAM
   .bss  : { *(.bss COMMON) } > RAM
-  . = ALIGN(STACK_FRAME_SIZE);
+  . = ALIGN(16);
 
   STACK_SIZE = 0x400;
   . = . + STACK_SIZE;
   STACK_TOP = .;
+
+  FREE_MEMORY = .;
+  FREE_MEMORY_SIZE = (ORIGIN(RAM) + LENGTH(RAM)) - FREE_MEMORY;
 }
