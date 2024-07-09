@@ -2,6 +2,25 @@
 #include "drivers/gic/gic_internal.h"
 #include "bits.h"
 
+// system support two security states
+// access not secure
+u8 gic_init(GICD dist) {
+  if (dist == 0) {
+    return 0;
+  }
+
+  u32 c = dist->CTLR;
+  c |= BIT(4); // set ARE_NS
+  dist->CTLR = c;
+
+  c |= BIT(1); // Enable group1NS
+  dist->CTLR = c;
+
+  // enable SRE bits
+  configure_icc();
+  return 1;
+}
+
 u32 get_redistributor_id(u64 base_address, u32 affinity) {
   u32 ind = 0;
   struct GICRv3 *redists = (void *)base_address;
@@ -24,25 +43,6 @@ void wake_redistributor(GICR redist) {
   do {
     tmp = redist->lpis.WAKER;
   } while ((tmp & BIT(2)) != 0);
-}
-
-// system support two security states
-// access not secure
-u8 gic_init(GICD dist) {
-  if (dist == 0) {
-    return 0;
-  }
-
-  u32 c = dist->CTLR;
-  c |= BIT(4); // set ARE_NS
-  dist->CTLR = c;
-
-  c |= BIT(1); // Enable group1NS
-  dist->CTLR = c;
-
-  // enable SRE bits
-  configure_icc();
-  return 1;
 }
 
 void int_set_priority(GICD dist, GICR redist, u32 int_id, u8 priority) {
@@ -131,7 +131,6 @@ void int_set_route(GICD dist, u32 int_id, u32 affinity) {
   int_route |= (U64(affinity & 0xff000000) << 32) | U64(affinity & 0x00ffffff);
 
   dist->GICD_IROUTER[int_id] = int_route;
-      
 }
 
 void int_enable(GICD dist, GICR redist, u32 int_id) {

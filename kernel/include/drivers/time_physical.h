@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-extern u64 timer_system_get_frequency(void);
+extern u64 timer_physical_frequency(void);
 extern u64 timer_physical_get_value(void);
 extern void timer_physical_enable(void);
 extern void timer_physical_set_threshold(u64 t);

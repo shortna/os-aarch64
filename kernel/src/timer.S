@@ -1,8 +1,8 @@
 .section .text
 
-.global timer_system_get_frequency
-.type timer_system_get_frequency, @function
-timer_system_get_frequency:
+.global timer_physical_frequency
+.type timer_physical_frequency, @function
+timer_physical_frequency:
   mrs x0, cntfrq_el0
   ret
 
