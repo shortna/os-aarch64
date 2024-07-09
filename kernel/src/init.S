@@ -16,7 +16,7 @@ _start:
   msr vbar_el1, x0
 
   // Use SP_EL0 at all Exception levels.
-  bl set_sp_sel
+  msr SPSel, 0
 
   // intialize stack
   // STACK_TOP defined in linker script
@@ -39,10 +39,3 @@ _start:
   // branch to kernel
   bl kmain
   b .
-
-.global set_sp_sel
-.type set_sp_sel, @function
-set_sp_sel:
-  msr SPSel, 0
-  ret
-

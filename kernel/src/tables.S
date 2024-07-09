@@ -51,32 +51,31 @@ el1_curr_el_sp0_sync:
 el1_curr_el_sp0_irq:
   // spsel sets to 1
   // bring it back to 0
-  bl set_sp_sel 
-  // save registers
-  // reserve space for 16 registers 8 bytes each
-  sub sp, sp, 128
-  // post index e.g save and then apply offset
-  stp x0, x1,   [sp], +STACK_FRAME_SIZE
-  stp x2, x3,   [sp], +STACK_FRAME_SIZE
-  stp x4, x5,   [sp], +STACK_FRAME_SIZE
-  stp x6, x7,   [sp], +STACK_FRAME_SIZE
-  stp x8, x9,   [sp], +STACK_FRAME_SIZE
-  stp x10, x11, [sp], +STACK_FRAME_SIZE
-  stp x12, x13, [sp], +STACK_FRAME_SIZE
-  stp x14, x15, [sp], +STACK_FRAME_SIZE
+  msr SPSel, 0
+  // pre index e.g apply offset and then store
+  stp x0, x1,   [sp, -STACK_FRAME_SIZE]!
+  stp x2, x3,   [sp, -STACK_FRAME_SIZE]!
+  stp x4, x5,   [sp, -STACK_FRAME_SIZE]!
+  stp x6, x7,   [sp, -STACK_FRAME_SIZE]!
+  stp x8, x9,   [sp, -STACK_FRAME_SIZE]!
+  stp x10, x11, [sp, -STACK_FRAME_SIZE]!
+  stp x12, x13, [sp, -STACK_FRAME_SIZE]!
+  stp x14, x15, [sp, -STACK_FRAME_SIZE]!
+  stp x30, xzr, [sp, -STACK_FRAME_SIZE]!
 
   bl handle
 
   // restore registers
-  // pre index e.g apply ofsset and then load
-  ldp x14, x15, [sp, -STACK_FRAME_SIZE]!
-  ldp x12, x13, [sp, -STACK_FRAME_SIZE]!
-  ldp x10, x11, [sp, -STACK_FRAME_SIZE]!
-  ldp x8, x9,   [sp, -STACK_FRAME_SIZE]!
-  ldp x6, x7,   [sp, -STACK_FRAME_SIZE]!
-  ldp x4, x5,   [sp, -STACK_FRAME_SIZE]!
-  ldp x2, x3,   [sp, -STACK_FRAME_SIZE]!
-  ldp x0, x1,   [sp, -STACK_FRAME_SIZE]!
+  // post index e.g load and then apply offset
+  ldp x30, xzr, [sp], +STACK_FRAME_SIZE
+  ldp x14, x15, [sp], +STACK_FRAME_SIZE
+  ldp x12, x13, [sp], +STACK_FRAME_SIZE
+  ldp x10, x11, [sp], +STACK_FRAME_SIZE
+  ldp x8, x9,   [sp], +STACK_FRAME_SIZE
+  ldp x6, x7,   [sp], +STACK_FRAME_SIZE
+  ldp x4, x5,   [sp], +STACK_FRAME_SIZE
+  ldp x2, x3,   [sp], +STACK_FRAME_SIZE
+  ldp x0, x1,   [sp], +STACK_FRAME_SIZE
   eret
 
 .balign 0x80
