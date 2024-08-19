@@ -1,7 +1,7 @@
 #include "drivers/rtc/rtc_internal.h"
 #include "drivers/rtc/rtc.h"
 
-RTC rtc(u64 rtc_base) { 
+RTC rtc(uint64_t rtc_base) { 
   RTC r = (void *)rtc_base; 
   return r;
 }
@@ -15,15 +15,15 @@ void rtc_reset(RTC r) {
   rtc_clear_interrupt(r);
 }
 
-u32 rtc_get_current(RTC r) {
+uint32_t rtc_get_current(RTC r) {
   return r->DR; 
 }
 
-void rtc_set_match(RTC r, u32 match_value) {
+void rtc_set_match(RTC r, uint32_t match_value) {
   r->MR = match_value;
 }
 
-void rtc_add_offset(RTC r, u32 offset) {
+void rtc_add_offset(RTC r, uint32_t offset) {
   r->LR = offset;
 }
 

@@ -16,44 +16,44 @@ typedef struct GICDv3 *GICD;
 typedef struct GICRv3 *GICR;
 
 struct InterruptParameters {
-  u8 priority;
-  u8 security;
-  u8 triger;
+  uint8_t priority;
+  uint8_t security;
+  uint8_t triger;
   bool route;
-  u32 affinity;
+  uint32_t affinity;
 };
 
-extern void register_interrupt(GICD dist, GICR redists, u32 int_id,
+extern void register_interrupt(GICD dist, GICR redists, uint32_t int_id,
                                struct InterruptParameters p);
 
 // get current PE
-extern u32 get_affinity(void);
+extern uint32_t get_affinity(void);
 
 // returns pointer to distributor
-extern GICD get_distributor(u64 gicd_base);
+extern GICD get_distributor(uint64_t gicd_base);
 // returns pointer to redistributors (including sgis and lpis)
-extern GICR get_redistributor(u64 gicr_base, u32 redist_id);
+extern GICR get_redistributor(uint64_t gicr_base, uint32_t redist_id);
 
 // enable interrupt controller
-extern u8 gic_init(GICD d);
+extern uint8_t gic_init(GICD d);
 
 // find redistributor that belongs to the specified affinity
-extern u32 get_redistributor_id(u64 gicr_base, u32 affinity);
+extern uint32_t get_redistributor_id(uint64_t gicr_base, uint32_t affinity);
 // wake up redistributor
 extern void wake_redistributor(GICR redist);
 
 /* INTERRUPT CONTROL */
 
-extern void int_set_priority(GICD dist, GICR redist, u32 int_id, u8 priority);
-extern void int_set_group(GICD dist, GICR redist, u32 int_id, u8 security);
-extern void int_set_triger(GICD dist, GICR redist, u32 int_id, u8 triger);
-extern void int_set_route(GICD dist, u32 int_id, u32 affinity);
-extern void int_enable(GICD dist, GICR redist, u32 int_id);
+extern void int_set_priority(GICD dist, GICR redist, uint32_t int_id, uint8_t priority);
+extern void int_set_group(GICD dist, GICR redist, uint32_t int_id, uint8_t security);
+extern void int_set_triger(GICD dist, GICR redist, uint32_t int_id, uint8_t triger);
+extern void int_set_route(GICD dist, uint32_t int_id, uint32_t affinity);
+extern void int_enable(GICD dist, GICR redist, uint32_t int_id);
 
 /* GIC CPU INTERFACE */
 
 // set interrupt priority mask
-extern void set_priority_mask(u8 mask);
+extern void set_priority_mask(uint8_t mask);
 
 // enable support for interrupts
 extern void enable_group0_ints(void);

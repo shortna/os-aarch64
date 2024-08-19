@@ -21,7 +21,7 @@ enum UART_INT_TYPE {
   UART_INT_NONE = 11,
 };
 
-extern UART uart_init(u64 uart_base);
+extern UART uart_init(uint64_t uart_base);
 
 extern void uart_enable(UART u);
 extern void uart_disable(UART u);
@@ -31,9 +31,9 @@ extern void uart_enable_interrupt(UART u, enum UART_INT_TYPE t);
 extern void uart_disable_interrupt(UART u, enum UART_INT_TYPE t);
 extern void uart_clear_interrupt(UART u, enum UART_INT_TYPE t);
 
-extern void uart_set_baud_rate(UART u, u64 uart_clock, u64 baud_rate);
+extern void uart_set_baud_rate(UART u, uint64_t uart_clock, uint64_t baud_rate);
 
-extern void uart_write_byte(UART u, u8 data);
-extern void uart_write(UART u, const u8 *data, u32 size);
+extern void uart_write_byte(UART u, uint8_t data);
+extern void uart_write(UART u, const uint8_t *data, uint32_t size);
 
 #endif

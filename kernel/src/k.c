@@ -7,29 +7,30 @@
 #include "drivers/mmu/mmu.h"
 
 // 24MHz
-#define APB_CLOCK U64(24000000)
+#define APB_CLOCK (uint64_t)(24000000)
 
-#define RTC_BASE_ADDRESS U64(0x9010000)
+#define RTC_BASE_ADDRESS (uint64_t)(0x9010000)
 
 #define UART_CLOCK APB_CLOCK
-#define UART_BAUD_RATE U64(115200)
-#define UART_BASE_ADDRESS U64(0x9000000)
+#define UART_BAUD_RATE (uint64_t)(115200)
+#define UART_BASE_ADDRESS (uint64_t)(0x9000000)
 
-#define GICD_BASE_ADDRESS U64(0x8000000)
-#define GICR_BASE_ADDRESS U64(0x80a0000)
+#define GICD_BASE_ADDRESS (uint64_t)(0x8000000)
+#define GICR_BASE_ADDRESS (uint64_t)(0x80a0000)
 
-#define VIRTIO_CONSOLE_ADDRESS U64(0xa003e00)
+#define VIRTIO_CONSOLE_ADDRESS (uint64_t)(0xa003e00)
 
-void kmain(u64 fdt_address) {
+uint64_t BREAKPOINT_IND = 0;
+
+void kmain(uint64_t fdt_address) {
   (void)fdt_address;
   /* GET INFO FROM FDT */
   // fdt_walk(fdt_address);
   mmu_init_kernel(31, GRANULARITY_4KB);
-  mmu_init_user(30, GRANULARITY_4KB);
   mmu_enable();
 
   /* ENBALE INTERRUPT ROUTING */
-  u32 redist_id = get_redistributor_id(GICR_BASE_ADDRESS, get_affinity());
+  uint32_t redist_id = get_redistributor_id(GICR_BASE_ADDRESS, get_affinity());
   if (redist_id == UINT32_MAX) {
     goto hang;
   }
@@ -52,7 +53,7 @@ void kmain(u64 fdt_address) {
 
   // enable timer
   // timer_interrupts = <0x01 0x0d 0x04 0x01 0x0e 0x04 0x01 0x0b 0x04 0x01 0x0a 0x04>;
-  u8 physical_counter_ns_int = 30;
+  uint8_t physical_counter_ns_int = 30;
   register_interrupt(dist, redist, physical_counter_ns_int, int_p);
 
   // interrupt each second
@@ -62,7 +63,7 @@ void kmain(u64 fdt_address) {
 
   // pl031 interrupts
   // interrupts = <0x00 0x02 0x04>;
-  u8 pl031_int = 34;
+  uint8_t pl031_int = 34;
   register_interrupt(dist, redist, pl031_int, int_p);
 
   RTC r = rtc(RTC_BASE_ADDRESS);
@@ -71,7 +72,7 @@ void kmain(u64 fdt_address) {
 
   // pl011 interrupts
   // uart_interrupts = <0x00 0x01 0x04>;
-  u8 pl011_int = 33;
+  uint8_t pl011_int = 33;
   register_interrupt(dist, redist, pl011_int, int_p);
 
   UART uart0 = uart_init(UART_BASE_ADDRESS);
@@ -81,7 +82,7 @@ void kmain(u64 fdt_address) {
   driver_add(DT_UART, uart0, pl011_int);
   uart_write_byte(uart0, 'U');
 
-//  u8 virtio_console_int = 0x2f;
+//  uint8_t virtio_console_int = 0x2f;
 //  VirtioDevice console = virtio(VIRTIO_CONSOLE_ADDRESS, VIRTIO_CONSOLE_F_EMERG_WRITE);
 //  if (console == NULL) {
 //    goto hang;

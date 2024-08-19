@@ -50,7 +50,6 @@ cbz x4, 0b
 // write common parameters to TCR_EL1
 // bit  [22]    - Selects whether TTBR0_EL1 or TTBR1_EL1 defines the ASID.
 // bits [34:32] - Intermediate Physical Address Size (mmu_implemented_parange)
-// bit  [36]    - ASID Size
 // 8bit ASID and TTBR0_EL1 defines the ASID, 32bits per IPA
 bl mmu_implemented_parange
 
@@ -62,6 +61,22 @@ mvn x4, x4
 and x3, x3, x4
 // insert result of mmu_implemented_parange at bit 32
 orr x3, x3, x0, lsl 32
+
+// check if Hierarchical Permission for tables implemented and if so, enable them
+// bit  [41]    - HPD0
+// bit  [42]    - HPD1
+mrs x5, ID_AA64MMFR1_EL1
+ubfx x5, x5, 12, 4
+cmp xzr, x5
+// branch if not implemented
+b.ne 0f
+
+// clear bits [41] [42]
+movz x4, 0x0600, lsl 32
+mvn x4, x4
+and x3, x3, x4
+
+0:
 msr TCR_EL1, x3
 
 // calculate TSZ value needed to achieve `address_space_n_bits`
@@ -117,98 +132,98 @@ ret
 // x1 = u8 granularity, allowed values are 4, 16, 64
 .type mmu_init_user, @function
 mmu_init_user:
-mov x0, x2 // x2 = x0
-
-// store return address 
-stp xzr, lr, [sp, -0x10]!
-// get maximum value of TSZ in x0
-bl mmu_maximum_value_of_TSZ
-
-// calculate minimal size of adress space 
-mov x3, 64
-sub x0, x3, x0
-
-// if address_space_n_bits is less then min than jump to err
-cmp x2, x0
-b.lt mmu_init_err
-
-// get supported granularity
-bl mmu_supported_granule_size_stage1
-// if granularity provided by caller supported, register x2 will be greater than zero
-
-// result of mmu_supported_granule_size_stage1 is supported granularities at bits [0] - 4KB [16] - 64KB [32] - 16KB
-mov x4, 0 // shift
-          // loop
-0:
-mov x4, x1 // desired granularity value
-lsr x0, x0, x3 // get next granularity
-and x4, x4, x0 // compare
-add x3, x3, 16 // add shift for next iteration
-cmp x3, 48 // if shift 48, desired granularity not supported
-b.eq mmu_init_err
-// compare to zero and branch to 0
-cbz x4, 0b
-
-// write common parameters to TCR_EL1
-// bit  [22]    - Selects whether TTBR0_EL1 or TTBR1_EL1 defines the ASID.
-// bits [34:32] - Intermediate Physical Address Size (mmu_implemented_parange)
-// bit  [36]    - ASID Size
-// 8bit ASID and TTBR0_EL1 defines the ASID, 32bits per IPA
-bl mmu_implemented_parange
-
-mrs x3, TCR_EL1
-// clear bits [22] [36] [34:32]
-movz x4, 0x0040, lsl 16
-movk x4, 0x0017, lsl 32
-mvn x4, x4
-and x3, x3, x4
-// insert result of mmu_implemented_parange at bit 32
-orr x3, x3, x0, lsl 32
-msr TCR_EL1, x3
-
-// calculate TSZ value needed to achieve `address_space_n_bits`
-mov x3, 64
-sub x2, x3, x2
-
-/*
-   TTBR0_EL1 - configuration registers for USER SPACE
-   bits in TTBR0_EL1:
-   bits to set:
-   bits [55:48] - An ASID for the translation table base address. 
-   bits [47:5]  - Translation table base address
-   bits [2:1]   - This determines the number of levels to be skipped from the regular start level of the stage 1 EL1&0 translation table walks using TTBR0_EL1.
-
-   bits in TCR_EL1 for TTBR0_EL1:
-   bits to set:
-   bits [5:0] - The size offset of the memory region addressed by TTBR0_EL1. 
-   bits [15:14] - Granule size for the TTBR0_EL1.
-
-   bits to zero:
-   bit [7] - This bit controls whether a translation table walk is performed on a TLB miss, for an address that is translated using TTBR0_EL1. 
-   bit [37] - Top Byte ignored. Indicates whether the top byte of an address is used for address match for the TTBR0_EL1 region, or ignored and used for tagged addresses.
- */
-// x0 - TCR
-// x1 - GRANULARITY
-// x2 - TSZ
-// x3 - MASK
-mrs x0, TCR_EL1
-// mask `0x200000c0bf` to clear relevant bits
-movz x3, 0xc0bf
-movk x3, 0x0020, lsl 32
-// clear relevant bits
-mvn x3, x3
-and x0, x0, x3
-// insert x2(TSZ) to x0(TCR)
-orr x0, x0, x2
-// insert granularity to x0
-orr x0, x0, x1, lsl 14
-msr TCR_EL1, x0
-
-bl mmu_init_translation_tables_user
-
-ldr lr, [sp, -0x8]
-add sp, sp, 0x10 // restore sp
-mov x0, 1
+//mov x0, x2 // x2 = x0
+//
+//// store return address 
+//stp xzr, lr, [sp, -0x10]!
+//// get maximum value of TSZ in x0
+//bl mmu_maximum_value_of_TSZ
+//
+//// calculate minimal size of adress space 
+//mov x3, 64
+//sub x0, x3, x0
+//
+//// if address_space_n_bits is less then min than jump to err
+//cmp x2, x0
+//b.lt mmu_init_err
+//
+//// get supported granularity
+//bl mmu_supported_granule_size_stage1
+//// if granularity provided by caller supported, register x2 will be greater than zero
+//
+//// result of mmu_supported_granule_size_stage1 is supported granularities at bits [0] - 4KB [16] - 64KB [32] - 16KB
+//mov x4, 0 // shift
+//          // loop
+//0:
+//mov x4, x1 // desired granularity value
+//lsr x0, x0, x3 // get next granularity
+//and x4, x4, x0 // compare
+//add x3, x3, 16 // add shift for next iteration
+//cmp x3, 48 // if shift 48, desired granularity not supported
+//b.eq mmu_init_err
+//// compare to zero and branch to 0
+//cbz x4, 0b
+//
+//// write common parameters to TCR_EL1
+//// bit  [22]    - Selects whether TTBR0_EL1 or TTBR1_EL1 defines the ASID.
+//// bits [34:32] - Intermediate Physical Address Size (mmu_implemented_parange)
+//// bit  [36]    - ASID Size
+//// 8bit ASID and TTBR0_EL1 defines the ASID, 32bits per IPA
+//bl mmu_implemented_parange
+//
+//mrs x3, TCR_EL1
+//// clear bits [22] [36] [34:32]
+//movz x4, 0x0040, lsl 16
+//movk x4, 0x0017, lsl 32
+//mvn x4, x4
+//and x3, x3, x4
+//// insert result of mmu_implemented_parange at bit 32
+//orr x3, x3, x0, lsl 32
+//msr TCR_EL1, x3
+//
+//// calculate TSZ value needed to achieve `address_space_n_bits`
+//mov x3, 64
+//sub x2, x3, x2
+//
+///*
+//   TTBR0_EL1 - configuration registers for USER SPACE
+//   bits in TTBR0_EL1:
+//   bits to set:
+//   bits [55:48] - An ASID for the translation table base address. 
+//   bits [47:5]  - Translation table base address
+//   bits [2:1]   - This determines the number of levels to be skipped from the regular start level of the stage 1 EL1&0 translation table walks using TTBR0_EL1.
+//
+//   bits in TCR_EL1 for TTBR0_EL1:
+//   bits to set:
+//   bits [5:0] - The size offset of the memory region addressed by TTBR0_EL1. 
+//   bits [15:14] - Granule size for the TTBR0_EL1.
+//
+//   bits to zero:
+//   bit [7] - This bit controls whether a translation table walk is performed on a TLB miss, for an address that is translated using TTBR0_EL1. 
+//   bit [37] - Top Byte ignored. Indicates whether the top byte of an address is used for address match for the TTBR0_EL1 region, or ignored and used for tagged addresses.
+// */
+//// x0 - TCR
+//// x1 - GRANULARITY
+//// x2 - TSZ
+//// x3 - MASK
+//mrs x0, TCR_EL1
+//// mask `0x200000c0bf` to clear relevant bits
+//movz x3, 0xc0bf
+//movk x3, 0x0020, lsl 32
+//// clear relevant bits
+//mvn x3, x3
+//and x0, x0, x3
+//// insert x2(TSZ) to x0(TCR)
+//orr x0, x0, x2
+//// insert granularity to x0
+//orr x0, x0, x1, lsl 14
+//msr TCR_EL1, x0
+//
+//bl mmu_init_translation_tables_user
+//
+//ldr lr, [sp, -0x8]
+//add sp, sp, 0x10 // restore sp
+mov x0, 0
 ret
 
 .global mmu_enable

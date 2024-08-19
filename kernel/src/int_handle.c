@@ -5,10 +5,10 @@
 #include "drivers/virtio/virtio.h"
 #include "types.h"
 
-extern u32 get_int_id(void);
+extern uint32_t get_int_id(void);
 
 void handle(void) {
-  u32 id = get_int_id();
+  uint32_t id = get_int_id();
   void *d;
   enum DEVICE_TYPE t = driver_get(&d, id);
   switch (t) {

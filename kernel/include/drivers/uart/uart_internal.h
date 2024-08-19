@@ -131,36 +131,36 @@
 #define UART_DMACR_DMAONERR BIT(2)
 
 struct UART {
-  volatile u32 DR;                                                  /* +0x000 */
-  volatile u32 RSR_ESR;                                             /* +0x004 */
-  const volatile u8 padding_0[16];                                  /* +0x008 */
-  const volatile u32 FR;                                            /* +0x018 */
-  const volatile u32 padding_1;                                     /* +0x01C */
-  volatile u32 UARTILPR;                                            /* +0x020 */   
-  volatile u32 IBRD;                                                /* +0x024 */
-  volatile u32 FBRD;                                                /* +0x028 */
-  volatile u32 LCRH;                                                /* +0x02C */
-  volatile u32 CR;                                                  /* +0x030 */
-  volatile u32 IFLS;                                                /* +0x034 */
-  volatile u32 IMSC;                                                /* +0x038 */
-  const volatile u32 RIS;                                           /* +0x03C */
-  const volatile u32 MIS;                                           /* +0x040 */
-  volatile u32 ICR;                                                 /* +0x044 */
-  volatile u32 DMACR;                                               /* +0x048 */
-  const volatile u8 padding_2[52];                                  /* +0x04C */
-  volatile u32 TCR;                                                 /* +0x080 */
-  volatile u32 ITIP;                                                /* +0x084 */
-  volatile u32 ITOP;                                                /* +0x088 */
-  volatile u32 TDR;                                                 /* +0x08C */
-  const volatile u8 padding_3[3920];                                /* +0x090 */
-  const volatile u32 PeriphID0;                                     /* +0xFE0 */
-  const volatile u32 PeriphID1;                                     /* +0xFE4 */
-  const volatile u32 PeriphID2;                                     /* +0xFE8 */
-  const volatile u32 PeriphID3;                                     /* +0xFFC */
-  const volatile u32 CellID0;                                       /* +0xFF0 */
-  const volatile u32 CellID1;                                       /* +0xFF4 */
-  const volatile u32 CellID2;                                       /* +0xFF8 */
-  const volatile u32 CellID3;                                       /* +0xFFC */
+  volatile uint32_t DR;                                                  /* +0x000 */
+  volatile uint32_t RSR_ESR;                                             /* +0x004 */
+  const volatile uint8_t padding_0[16];                                  /* +0x008 */
+  const volatile uint32_t FR;                                            /* +0x018 */
+  const volatile uint32_t padding_1;                                     /* +0x01C */
+  volatile uint32_t UARTILPR;                                            /* +0x020 */   
+  volatile uint32_t IBRD;                                                /* +0x024 */
+  volatile uint32_t FBRD;                                                /* +0x028 */
+  volatile uint32_t LCRH;                                                /* +0x02C */
+  volatile uint32_t CR;                                                  /* +0x030 */
+  volatile uint32_t IFLS;                                                /* +0x034 */
+  volatile uint32_t IMSC;                                                /* +0x038 */
+  const volatile uint32_t RIS;                                           /* +0x03C */
+  const volatile uint32_t MIS;                                           /* +0x040 */
+  volatile uint32_t ICR;                                                 /* +0x044 */
+  volatile uint32_t DMACR;                                               /* +0x048 */
+  const volatile uint8_t padding_2[52];                                  /* +0x04C */
+  volatile uint32_t TCR;                                                 /* +0x080 */
+  volatile uint32_t ITIP;                                                /* +0x084 */
+  volatile uint32_t ITOP;                                                /* +0x088 */
+  volatile uint32_t TDR;                                                 /* +0x08C */
+  const volatile uint8_t padding_3[3920];                                /* +0x090 */
+  const volatile uint32_t PeriphID0;                                     /* +0xFE0 */
+  const volatile uint32_t PeriphID1;                                     /* +0xFE4 */
+  const volatile uint32_t PeriphID2;                                     /* +0xFE8 */
+  const volatile uint32_t PeriphID3;                                     /* +0xFFC */
+  const volatile uint32_t CellID0;                                       /* +0xFF0 */
+  const volatile uint32_t CellID1;                                       /* +0xFF4 */
+  const volatile uint32_t CellID2;                                       /* +0xFF8 */
+  const volatile uint32_t CellID3;                                       /* +0xFFC */
 };
 
 #endif

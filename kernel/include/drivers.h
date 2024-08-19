@@ -12,8 +12,8 @@ enum DEVICE_TYPE {
 };
 
 bool driver_list_init(void);
-void driver_add(enum DEVICE_TYPE t, void *d, u32 int_id);
-enum DEVICE_TYPE driver_get(void **d, u32 int_id);
+void driver_add(enum DEVICE_TYPE t, void *d, uint32_t int_id);
+enum DEVICE_TYPE driver_get(void **d, uint32_t int_id);
 
 #endif
 

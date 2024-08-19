@@ -4,12 +4,12 @@
 
 // system support two security states
 // access not secure
-u8 gic_init(GICD dist) {
+uint8_t gic_init(GICD dist) {
   if (dist == 0) {
     return 0;
   }
 
-  u32 c = dist->CTLR;
+  uint32_t c = dist->CTLR;
   c |= BIT(4); // set ARE_NS
   dist->CTLR = c;
 
@@ -21,8 +21,8 @@ u8 gic_init(GICD dist) {
   return 1;
 }
 
-u32 get_redistributor_id(u64 base_address, u32 affinity) {
-  u32 ind = 0;
+uint32_t get_redistributor_id(uint64_t base_address, uint32_t affinity) {
+  uint32_t ind = 0;
   struct GICRv3 *redists = (void *)base_address;
 
   do {
@@ -36,7 +36,7 @@ u32 get_redistributor_id(u64 base_address, u32 affinity) {
 }
 
 void wake_redistributor(GICR redist) {
-  u32 tmp = redist->lpis.WAKER;
+  uint32_t tmp = redist->lpis.WAKER;
   tmp &= ~BIT(1);
   redist->lpis.WAKER = tmp;
 
@@ -45,8 +45,8 @@ void wake_redistributor(GICR redist) {
   } while ((tmp & BIT(2)) != 0);
 }
 
-void int_set_priority(GICD dist, GICR redist, u32 int_id, u8 priority) {
-  u32 bank, offset; // offset within register
+void int_set_priority(GICD dist, GICR redist, uint32_t int_id, uint8_t priority) {
+  uint32_t bank, offset; // offset within register
   bank = int_id / 4;
   offset = int_id & 0x3;
   if (int_id < 31) {
@@ -56,8 +56,8 @@ void int_set_priority(GICD dist, GICR redist, u32 int_id, u8 priority) {
   }
 };
 
-void int_set_group(GICD dist, GICR redist, u32 int_id, u8 security) {
-  u32 bank, bit, group, mod;
+void int_set_group(GICD dist, GICR redist, uint32_t int_id, uint8_t security) {
+  uint32_t bank, bit, group, mod;
   bank = int_id / 32;
   bit = int_id & 0x1f;
   bit = 1 << bit;
@@ -98,8 +98,8 @@ void int_set_group(GICD dist, GICR redist, u32 int_id, u8 security) {
   }
 }
 
-void int_set_triger(GICD dist, GICR redist, u32 int_id, u8 triger) {
-  u32 bank, bit, tr;
+void int_set_triger(GICD dist, GICR redist, uint32_t int_id, uint8_t triger) {
+  uint32_t bank, bit, tr;
   bank = int_id / 16;
   bit = int_id & 0xf;
   bit *= 2;
@@ -122,19 +122,19 @@ void int_set_triger(GICD dist, GICR redist, u32 int_id, u8 triger) {
   }
 }
 
-void int_set_route(GICD dist, u32 int_id, u32 affinity) {
-  u64 int_route = dist->GICD_IROUTER[int_id];
+void int_set_route(GICD dist, uint32_t int_id, uint32_t affinity) {
+  uint64_t int_route = dist->GICD_IROUTER[int_id];
 
   int_route &= ~BIT(31); // enable routing mode
   int_route = bits_clear(int_route, 32, 8);
   int_route = bits_clear(int_route, 0, 24);
-  int_route |= (U64(affinity & 0xff000000) << 32) | U64(affinity & 0x00ffffff);
+  int_route |= ((uint64_t)(affinity & 0xff000000) << 32) | (uint64_t)(affinity & 0x00ffffff);
 
   dist->GICD_IROUTER[int_id] = int_route;
 }
 
-void int_enable(GICD dist, GICR redist, u32 int_id) {
-  u32 bank, bit;
+void int_enable(GICD dist, GICR redist, uint32_t int_id) {
+  uint32_t bank, bit;
   bank = int_id / 32;
   bit = int_id & 0x1f;
   bit = 1 << bit;
@@ -146,13 +146,13 @@ void int_enable(GICD dist, GICR redist, u32 int_id) {
   }
 }
 
-GICD get_distributor(u64 gicd_base) { return (GICD)gicd_base; }
+GICD get_distributor(uint64_t gicd_base) { return (GICD)gicd_base; }
 
-GICR get_redistributor(u64 gicr_base, u32 redist_id) {
+GICR get_redistributor(uint64_t gicr_base, uint32_t redist_id) {
   return ((GICR)gicr_base) + redist_id;
 }
 
-void register_interrupt(GICD dist, GICR redist, u32 int_id,
+void register_interrupt(GICD dist, GICR redist, uint32_t int_id,
                         struct InterruptParameters p) {
   int_set_priority(dist, redist, int_id, p.priority);
   int_set_group(dist, redist, int_id, p.security);
