@@ -15,7 +15,7 @@ CONSOLE_SOCKET :=/tmp/virt_console.socket
 # uart connected to stdio, console connected to socket
 QEMU_CONSOLE := -chardev socket,id=console0,path=$(CONSOLE_SOCKET),server=on,wait=on -device virtio-serial-device,max_ports=2 -device virtconsole,chardev=console0
 # general configuration
-QEMUFLAGS := -machine virt,gic-version=3 -cpu cortex-a57 -m 1G -no-reboot -nographic -serial mon:stdio $(QEMU_CONSOLE) 
+QEMUFLAGS := -machine virt,gic-version=3,virtualization=off,secure=off,mte=off,its=off -cpu cortex-a57 -m 1G -no-reboot -nographic -serial mon:stdio $(QEMU_CONSOLE) 
 
 CC := clang -target aarch64-none-elf
 LD := ld.lld
@@ -48,7 +48,7 @@ qemu: all
 	qemu-system-aarch64 $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
 
 qemu-debug: all
-	qemu-system-aarch64 -s -S $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
+	qemu-system-aarch64 -s -S $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET) &
 
 connect_to_console:
 	socat UNIX-CONNECT:$(CONSOLE_SOCKET) STDOUT

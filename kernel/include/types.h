@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #define BREAKPOINT(v) __asm__ volatile("brk " #v)
-#define GLOBAL_VARIABLES (0x40000000)
-extern uint64_t BREAKPOINT_IND;
+extern void* KERNEL_DATA;
 
 #endif /* TYPES */

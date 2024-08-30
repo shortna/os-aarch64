@@ -3,30 +3,26 @@
 #include "drivers/rtc/rtc.h"
 #include "drivers/time_physical.h"
 #include "drivers/uart/uart.h"
-#include "drivers/virtio/virtio.h"
 #include "drivers/mmu/mmu.h"
 
 // 24MHz
-#define APB_CLOCK (uint64_t)(24000000)
+#define APB_CLOCK                        ((uint64_t)24000000)
+#define RTC_BASE_ADDRESS                 ((uint64_t)0x9010000)
+#define UART_CLOCK                       APB_CLOCK
+#define UART_BAUD_RATE                   ((uint64_t)115200)
+#define UART_BASE_ADDRESS                ((uint64_t)0x9000000)
+#define GICD_BASE_ADDRESS                ((uint64_t)0x8000000)
+#define GICR_BASE_ADDRESS                ((uint64_t)0x80a0000)
+#define VIRTIO_CONSOLE_ADDRESS           ((uint64_t)0xa003e00)
 
-#define RTC_BASE_ADDRESS (uint64_t)(0x9010000)
-
-#define UART_CLOCK APB_CLOCK
-#define UART_BAUD_RATE (uint64_t)(115200)
-#define UART_BASE_ADDRESS (uint64_t)(0x9000000)
-
-#define GICD_BASE_ADDRESS (uint64_t)(0x8000000)
-#define GICR_BASE_ADDRESS (uint64_t)(0x80a0000)
-
-#define VIRTIO_CONSOLE_ADDRESS (uint64_t)(0xa003e00)
-
-uint64_t BREAKPOINT_IND = 0;
+extern uint64_t K_DATA;
+void *KERNEL_DATA = &K_DATA;
 
 void kmain(uint64_t fdt_address) {
   (void)fdt_address;
   /* GET INFO FROM FDT */
   // fdt_walk(fdt_address);
-  mmu_init_kernel(31, GRANULARITY_4KB);
+  mmu_init_kernel(GRANULARITY_4KB);
   mmu_enable();
 
   /* ENBALE INTERRUPT ROUTING */

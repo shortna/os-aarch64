@@ -45,12 +45,26 @@ get_int_id:
 .balign 0x800
 vector_table_el1:
 el1_curr_el_sp0_sync:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_curr_el_sp0_irq:
+  b .
+
+.balign 0x80
+el1_curr_el_sp0_fiq:
+  b .
+
+.balign 0x80
+el1_curr_el_sp0_serror:
+  b .
+
+.balign 0x80
+el1_curr_el_spx_sync:
+  eret
+
+.balign 0x80
+el1_curr_el_spx_irq:
   // spsel sets to 1
   // bring it back to 0
   msr SPSel, 0
@@ -81,85 +95,41 @@ el1_curr_el_sp0_irq:
   eret
 
 .balign 0x80
-el1_curr_el_sp0_fiq:
-  // for debug purposes
-  msr SPSel, 0
-  b .
-
-.balign 0x80
-el1_curr_el_sp0_serror:
-  // for debug purposes
-  msr SPSel, 0
-  b .
-
-.balign 0x80
-el1_curr_el_spx_sync:
-  // for debug purposes
-  msr SPSel, 0
-  b .
-
-.balign 0x80
-el1_curr_el_spx_irq:
-  // for debug purposes
-  msr SPSel, 0
-  b .
-
-.balign 0x80
 el1_curr_el_spx_fiq:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_curr_el_spx_serror:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch64_sync:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch64_irq:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch64_fiq:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch64_serror:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch32_sync:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch32_irq:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch32_fiq:
-  // for debug purposes
-  msr SPSel, 0
   b .
 
 .balign 0x80
 el1_lower_el_aarch32_serror:
-  // for debug purposes
-  msr SPSel, 0
   b .

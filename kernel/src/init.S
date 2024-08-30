@@ -9,7 +9,7 @@ _start:
   mrs x0, SCTLR_EL1
   // bit [0] - when 0 mmu disabled = 0
   // bits [1] [3] [4] - alignment checks = 1
-  // bit [12] - Stage 1 instruction access Cacheability control, for accesses at EL0 and EL1 = 1
+  // bit [12] - Stage 1 instruction access Cacheability control, for accesses at EL0 and EL1
   // bit [24] - Endianness of data accesses at EL0 = 0 (liitle endian)
   // bit [25] - Endianness of data accesses at EL1, and stage 1 translation table walks in the EL1&0 translation regime = 0(little endian)
 
@@ -40,9 +40,6 @@ _start:
   // set base address of EVT
   adr x0, vector_table_el1
   msr VBAR_EL1, x0
-
-  // Use SP_EL0 at all Exception levels.
-  msr SPSel, 0
 
   // intialize stack
   // STACK_TOP defined in linker script

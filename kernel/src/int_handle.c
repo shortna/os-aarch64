@@ -2,7 +2,6 @@
 #include "drivers/rtc/rtc.h"
 #include "drivers/time_physical.h"
 #include "drivers/uart/uart.h"
-#include "drivers/virtio/virtio.h"
 #include "types.h"
 
 extern uint32_t get_int_id(void);
