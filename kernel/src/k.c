@@ -22,7 +22,7 @@ void kmain(uint64_t fdt_address) {
   (void)fdt_address;
   /* GET INFO FROM FDT */
   // fdt_walk(fdt_address);
-  mmu_init_kernel(GRANULARITY_4KB);
+  mmu_init(GRANULARITY_4KB);
   mmu_enable();
 
   /* ENBALE INTERRUPT ROUTING */

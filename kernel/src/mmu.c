@@ -1,93 +1,190 @@
 #include "drivers/mmu/mmu.h"
 #include "bits.h"
 
-/*
-   I am gonna split virtual address space in two parts (kernel and user spaces)
-   theres 2G of ddress space in VM so be it 1280MB for kernel and 768MB for user space
-   (cause kernel have peripherals and it will take 256MB of RAM)
+enum ADDRESSABLE_IPS {/*{{{*/
+  IPS_4GB   = 0,
+  IPS_64GB  = 1,
+  IPS_1TB   = 2,
+  IPS_4TB   = 3,
+  IPS_16TB  = 4,
+  IPS_256TB = 5,
+  IPS_4PB   = 6,
+  IPS_64PB  = 7,
+};/*}}}*/
 
-   for 1280MB block size of address space will be 31 bit
-   which means translation starts at level 1 bits [30:0]
+enum PAGE_ATTRIBUTES : uint64_t {/*{{{*/
+  PAGE_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER = BIT(54),
+  PAGE_ATTRIBUTE_READ_WRITE                 = 0x040,
+  PAGE_ATTRIBUTE_READ_ONLY                  = 0x0C0,
 
-   for 768MB block size of address space will be 30 bit
-   which means translation starts at level 2 bits [29:0]
+  PAGE_ATTRIBUTE_PRIVILEGED_EXECUTE_NEVER   = BIT(53),
+  PAGE_ATTRIBUTE_PRIVILEGED_READ_WRITE      = 0x000,
+  PAGE_ATTRIBUTE_PRIVILEGED_READ_ONLY       = 0x080,
 
-   Chosen configuration:
-   granularity = 4KB
-*/
+  PAGE_ATTRIBUTE_CONTIGUOUS                 = BIT(52),
+  PAGE_ATTRIBUTE_NON_GLOBAL                 = 0x800,
+  PAGE_ATTRIBUTE_ACCESS_FLAG                = 0x400,
+  PAGE_ATTRIBUTE_NON_SHAREABLE              = 0x000,
+  PAGE_ATTRIBUTE_INNER_SHAREABLE            = 0x300,
+  PAGE_ATTRIBUTE_OUTER_SHAREABLE            = 0x200,
+};/*}}}*/
 
-// DESCRIPTOR_INVALID  = 0x0, // bit [1] doesnt matter bit [0] always 0
-// DESCRIPTOR_RESERVED = 0x2, // if entry level == 3
-// DESCRIPTOR_TABLE    = 0x3, // if entry level != 3, otherwise PAGE
-// DESCRIPTOR_BLOCK    = 0x1, // if entry level != 3, otherwise RESERVED
-// DESCRIPTOR_PAGE     = 0x3, // if entry level == 3,
+enum BLOCK_ATTRIBUTES : uint64_t {/*{{{*/
+  BLOCK_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER = BIT(54),
+  BLOCK_ATTRIBUTE_READ_WRITE                 = 0x040,
+  BLOCK_ATTRIBUTE_READ_ONLY                  = 0x0C0,
 
-#define PAGE_UPPER_ATTRIBUTE_EXECUTE_NEVER         0x010 // priviliged or unpriviliged depends on security state
-#define PAGE_UPPER_ATTRIBUTE_CONTIGUOUS            0x004
-#define PAGE_LOWER_ATTRIBUTE_NON_GLOBAL            0x200
-#define PAGE_LOWER_ATTRIBUTE_ACCESS_FLAG           0x100
-#define PAGE_LOWER_ATTRIBUTE_NON_SHAREABLE         0x000
-#define PAGE_LOWER_ATTRIBUTE_OUTER_SHAREABLE       0x080
-#define PAGE_LOWER_ATTRIBUTE_INNER_SHAREABLE       0x0C0
-#define PAGE_LOWER_ATTRIBUTE_PRIVILEGED_READ_WRITE 0x000
-#define PAGE_LOWER_ATTRIBUTE_READ_WRITE            0x010
-#define PAGE_LOWER_ATTRIBUTE_PRIVILEGED_READ_ONLY  0x020
-#define PAGE_LOWER_ATTRIBUTE_READ_ONLY             0x030
+  BLOCK_ATTRIBUTE_PRIVILEGED_EXECUTE_NEVER   = BIT(53),
+  BLOCK_ATTRIBUTE_PRIVILEGED_READ_WRITE      = 0x000,
+  BLOCK_ATTRIBUTE_PRIVILEGED_READ_ONLY       = 0x080,
 
-#define TABLE_ATTRIBUTE_EXECUTE_NEVER              0x02 // priviliged or unpriviliged depends on security state
-#define TABLE_ATTRIBUTE_PRIVILIGED                 0x04
-#define TABLE_ATTRIBUTE_READ_ONLY                  0x08
-#define TABLE_ATTRIBUTE_PRIVILIGED_READ_ONLY       0x0C
+  BLOCK_ATTRIBUTE_CONTIGUOUS                 = BIT(52),
+  BLOCK_ATTRIBUTE_NON_GLOBAL                 = 0x800,
+  BLOCK_ATTRIBUTE_ACCESS_FLAG                = 0x400,
+  BLOCK_ATTRIBUTE_NON_SHAREABLE              = 0x000,
+  BLOCK_ATTRIBUTE_INNER_SHAREABLE            = 0x300,
+  BLOCK_ATTRIBUTE_OUTER_SHAREABLE            = 0x200,
+};/*}}}*/
 
-extern uint64_t mmu_read_ttbr1_el1(void);
+enum TABLE_ATTRIBUTES : uint64_t {/*{{{*/
+  TABLE_ATTRIBUTE_PRIVILEGED_EXECUTE_NEVER   = BIT(59),
+  TABLE_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER = BIT(60),
+  TABLE_ATTRIBUTE_PRIVILEGED_READ_WRITE      = BIT(61),
+  TABLE_ATTRIBUTE_READ_ONLY                  = BIT(62),
+  TABLE_ATTRIBUTE_PRIVILEGED_READ_ONLY       = BIT(62) | BIT(61),
+};/*}}}*/
+
+enum MEMORY_ATTRIBUTES {/*{{{*/
+  MEMORY_ATTRIBUTE_nGnRnE = 0x0,
+  MEMORY_ATTRIBUTE_NORMAL = 0x4, // first index
+};/*}}}*/
+
+/*{{{*/
+#define PAGE_ENTRY           0x3
+#define TABLE_ENTRY          0x3
+#define BLOCK_ENTRY          0x1
+
+// ideally this info need to be passed from fdt
+#define FDT_END              0x00100000
+#define FLASH_END            0x08000000
+#define MMIO_END             _1GB
+#define RAM_END              (_1GB * 2)
+
+#define FDT_L3_ENTRY_ATTRIBUTES  ((uint64_t)PAGE_ENTRY | MEMORY_ATTRIBUTE_nGnRnE | PAGE_ATTRIBUTE_CONTIGUOUS \
+    | PAGE_ATTRIBUTE_NON_SHAREABLE | PAGE_ATTRIBUTE_ACCESS_FLAG | PAGE_ATTRIBUTE_PRIVILEGED_READ_ONLY \
+    | PAGE_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER | PAGE_ATTRIBUTE_PRIVILEGED_EXECUTE_NEVER)
+
+#define FLASH_L3_ENTRY_ATTRIBUTES  ((uint64_t)PAGE_ENTRY | MEMORY_ATTRIBUTE_NORMAL | PAGE_ATTRIBUTE_CONTIGUOUS \
+    | PAGE_ATTRIBUTE_PRIVILEGED_READ_ONLY | PAGE_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER | PAGE_ATTRIBUTE_INNER_SHAREABLE \
+    | PAGE_ATTRIBUTE_ACCESS_FLAG)
+
+#define MMIO_L3_ENTRY_ATTRIBUTES  ((uint64_t)PAGE_ENTRY | MEMORY_ATTRIBUTE_nGnRnE | PAGE_ATTRIBUTE_CONTIGUOUS \
+    | PAGE_ATTRIBUTE_NON_SHAREABLE | PAGE_ATTRIBUTE_ACCESS_FLAG | PAGE_ATTRIBUTE_PRIVILEGED_READ_WRITE \
+    | PAGE_ATTRIBUTE_PRIVILEGED_EXECUTE_NEVER | PAGE_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER)
+
+#define RAM_L3_ENTRY_ATTRIBUTES  ((uint64_t)PAGE_ENTRY | MEMORY_ATTRIBUTE_NORMAL | PAGE_ATTRIBUTE_CONTIGUOUS \
+    | PAGE_ATTRIBUTE_INNER_SHAREABLE | PAGE_ATTRIBUTE_ACCESS_FLAG | PAGE_ATTRIBUTE_READ_WRITE)
+
+#define _1GB                 ((uint64_t)1024 * 1024 * 1024)
+#define _1TB                 ((uint64_t)1024 * 1024 * 1024 * 1024)
+#define _1PB                 ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)/*}}}*/
+
+extern uint64_t mmu_read_ttbr1_el1(void);/*{{{*/
 extern void mmu_write_ttbr1_el1(uint64_t value);
 extern uint64_t mmu_read_ttbr0_el1(void);
-extern void mmu_write_ttbr0_el1(uint64_t value);
-
-#define PAGE_SIZE         (4096)
-#define TABLE_ENTRY_SIZE  (8)
-#define TABLE_ENTRIES_MAX (PAGE_SIZE / TABLE_ENTRY_SIZE)
-#define TABLE_SIZE        ((uint64_t)TABLE_ENTRIES_MAX * TABLE_ENTRY_SIZE)
-
-#define ADDRESS_SPACE ((uint64_t)1024 * 1024 * 1024 + 1024 * 1024 * 256)
-extern uint8_t MEMORY_NORMAL_IND;
-extern uint8_t MEMORY_nGnRnE_IND;
+extern void mmu_write_ttbr0_el1(uint64_t value);/*}}}*/
 
 void *kmalloc(uint64_t size) {}
 void *mmap(void *addr) {}
 
-#define MEMORY_ATTRIBUTE_nGnRnE (0x0)
-#define MEMORY_ATTRIBUTE_NORMAL (0x1 << 2)
+uint64_t PAGE_SIZE = 4096;
+static uint64_t TABLE_ENTRY_SIZE = 8;
+static uint64_t TABLE_ENTRIES_MAX; 
+static uint64_t TABLE_SIZE;        
 
-#define BLOCK_ENTRY 0x00000000000000401
-#define TABLE_ENTRY 0x00000000000000403
-#define PAGE_ENTRY  0x00000000000000403
-
-void mmu_init_translation_tables_kernel(void) {
-  uint64_t *tables = (void *)ALIGN((uint64_t)KERNEL_DATA, TABLE_SIZE);
-  uint64_t *tables_level2 = tables + TABLE_ENTRIES_MAX;
-  uint64_t *pages = tables_level2 + TABLE_ENTRIES_MAX * 2;
-
-  for (uint8_t entry = 0; entry < 2; entry++) {
-    // orr address to entry
-    tables[entry] = (uint64_t)tables_level2 + entry * TABLE_SIZE | TABLE_ENTRY;
+void mmu_init_translation_tables(enum ADDRESSABLE_IPS ips_size, enum GRANULARITY_TYPE type) {
+  switch (type) {
+    case GRANULARITY_16KB:
+      PAGE_SIZE = 16384;
+      break;
+    case GRANULARITY_64KB:
+      PAGE_SIZE = 65536;
+      break;
+    case GRANULARITY_4KB:
+    default:
+      break;
   }
 
-  uint64_t n_pages = ADDRESS_SPACE / PAGE_SIZE;
-  for (uint16_t entry = 0; entry < n_pages / TABLE_ENTRIES_MAX; entry++) {
-    tables_level2[entry] = (uint64_t)pages + entry * TABLE_SIZE | TABLE_ENTRY;
+  TABLE_ENTRIES_MAX = (PAGE_SIZE / TABLE_ENTRY_SIZE); 
+  TABLE_SIZE = TABLE_ENTRIES_MAX * TABLE_ENTRY_SIZE;
+
+  uint64_t n_entries = 0;
+  switch(ips_size) {
+    case IPS_4GB:
+      n_entries = _1GB * 4 / PAGE_SIZE;
+      break;
+    case IPS_64GB:
+      n_entries = _1GB * 64 / PAGE_SIZE;
+      break;
+    case IPS_1TB:
+      n_entries = _1TB / PAGE_SIZE;
+      break;
+    case IPS_4TB:
+      n_entries = _1TB * 4 / PAGE_SIZE;
+      break;
+    case IPS_16TB:
+      n_entries = _1TB * 16 / PAGE_SIZE;
+      break;
+    case IPS_256TB:
+      n_entries = _1TB * 256 / PAGE_SIZE;
+      break;
+    case IPS_4PB:
+      n_entries = _1PB * 4 / PAGE_SIZE;
+      break;
+    case IPS_64PB:
+      n_entries = _1PB * 64 / PAGE_SIZE;
+      break;
   }
 
-  uint64_t address = 0;
-  for (uint32_t page = 0; page < n_pages; page++, address += PAGE_SIZE) {
-    pages[page] = address | MEMORY_ATTRIBUTE_nGnRnE | PAGE_ENTRY;
+  uint64_t *base = (void *)ALIGN((uint64_t)KERNEL_DATA, TABLE_SIZE);
+  uint64_t *cur_level = base;
+  uint64_t address = 0x0;
+
+  // address < 0x00100000 - nGnRnE, r,   non_shareable    // fdt
+  // address < 0x08000000 - normal, rx,  shareable        // flash with code
+  // address < _1GB       - nGnRnE, rw,  non_shareable    // mmio
+  // address >= _1GB      - normal, rwx, 25% - 2MB blocks // ram
+
+  // fill pages
+  uint64_t attrs = FDT_L3_ENTRY_ATTRIBUTES;
+  uint64_t n_pages_written = 0;
+  for (; address < RAM_END; address += PAGE_SIZE, cur_level++, n_pages_written++) {
+    switch (address) {
+      case FDT_END:
+        attrs = FLASH_L3_ENTRY_ATTRIBUTES;
+        break;
+      case FLASH_END:
+        attrs = MMIO_L3_ENTRY_ATTRIBUTES;
+        break;
+      case MMIO_END:
+        attrs = RAM_L3_ENTRY_ATTRIBUTES;
+        break;
+    }
+    *cur_level = address | attrs;
+  }
+
+  uint64_t *previous_level = base;
+  n_entries = n_pages_written;
+  for (uint8_t i = 3; i > 0; i--) {
+    cur_level = (void*)ALIGN((uint64_t)(cur_level + n_entries), TABLE_SIZE);
+    n_entries = n_entries / TABLE_ENTRIES_MAX + (bool)(n_entries % TABLE_ENTRIES_MAX); // n_tables + 1 if last not full
+    for (uint64_t entry = 0; entry < n_entries; entry++)
+      cur_level[entry] = (uint64_t)previous_level + entry * TABLE_SIZE | TABLE_ENTRY;
+
+    previous_level = cur_level;
   }
 
   uint64_t ttbr0_el1 = mmu_read_ttbr0_el1();
-  ttbr0_el1 |= (uint64_t)tables; // write address of ttbr
+  ttbr0_el1 |= (uint64_t)cur_level; // write address of ttbr
   mmu_write_ttbr0_el1(ttbr0_el1);
 }
-
-void mmu_init_translation_tables_user(void) {
-  BREAKPOINT(1);
-};
