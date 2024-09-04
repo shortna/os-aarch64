@@ -48,7 +48,7 @@ qemu: all
 	qemu-system-aarch64 $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
 
 qemu-debug: all
-	qemu-system-aarch64 -s -S $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET) &
+	qemu-system-aarch64 -s -S $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
 
 connect_to_console:
 	socat UNIX-CONNECT:$(CONSOLE_SOCKET) STDOUT

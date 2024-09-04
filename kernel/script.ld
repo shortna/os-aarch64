@@ -2,7 +2,7 @@ ENTRY(_start)
 
 MEMORY {
   /* FLASH from 0x0 to 0x100000 reserved for fdt */
-  FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x08000000
+  FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x07F00000
   RAM    (rwx) : ORIGIN = 0x40000000, LENGTH = 0x40000000 /* 1GB */
 }
 SECTIONS
