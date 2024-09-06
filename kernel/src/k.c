@@ -4,6 +4,7 @@
 #include "drivers/time_physical.h"
 #include "drivers/uart/uart.h"
 #include "drivers/mmu/mmu.h"
+#include "drivers/virtio/virtio.h"
 
 // 24MHz
 #define APB_CLOCK                        ((uint64_t)24000000)
@@ -15,8 +16,8 @@
 #define GICR_BASE_ADDRESS                ((uint64_t)0x80a0000)
 #define VIRTIO_CONSOLE_ADDRESS           ((uint64_t)0xa003e00)
 
-extern uint64_t K_DATA;
-void *KERNEL_DATA = &K_DATA;
+extern uint64_t FREE_SPACE;
+void *FREE = &FREE_SPACE;
 
 void kmain(uint64_t fdt_address) {
   (void)fdt_address;
@@ -78,17 +79,15 @@ void kmain(uint64_t fdt_address) {
   driver_add(DT_UART, uart0, pl011_int);
   uart_write_byte(uart0, 'U');
 
-//  uint8_t virtio_console_int = 0x2f;
-//  VirtioDevice console = virtio(VIRTIO_CONSOLE_ADDRESS, VIRTIO_CONSOLE_F_EMERG_WRITE);
-//  if (console == NULL) {
-//    goto hang;
-//  }
-//  register_interrupt(dist, redist, virtio_console_int, int_p);
-//  driver_add(DT_VIRTIO, console, virtio_console_int);
-//
-//  virtio_console_emerge_write(console, 'W');
-//  virtio_console_emerge_write(console, 'H');
-//  virtio_console_emerge_write(console, 'Y');
+  VirtioDevice console = virtio_init(VIRTIO_CONSOLE_ADDRESS, VIRTIO_CONSOLE, (uint32_t[4]){VIRTIO_CONSOLE_FEATURE_EMERG_WRITE}, NULL);
+  if (console == NULL) {
+    goto hang;
+  }
+  uint8_t virtio_console_int = 0x2f;
+  register_interrupt(dist, redist, virtio_console_int, int_p);
+  driver_add(DT_VIRTIO, console, virtio_console_int);
+
+//  virtio_write(console, "CONSOLE");
 
 hang:
   __asm__("mov x0, 0xdead");

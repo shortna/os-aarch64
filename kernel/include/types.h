@@ -9,6 +9,6 @@
 #include <stdint.h>
 
 #define BREAKPOINT(v) __asm__ volatile("brk " #v)
-extern void* KERNEL_DATA;
+extern void* FREE;
 
 #endif /* TYPES */

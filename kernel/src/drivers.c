@@ -9,8 +9,8 @@ struct Driver {
   void *d;
 };
 
-__attribute__((section(".data"))) static struct Driver drivers[N_DRIVERS];
-__attribute__((section(".data"))) static uint8_t drivers_count = 0;
+static struct Driver drivers[N_DRIVERS];
+static uint8_t drivers_count = 0;
 
 void driver_add(enum DEVICE_TYPE t, void *d, uint32_t int_id) {
   drivers[drivers_count].type = t;

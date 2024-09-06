@@ -12,9 +12,10 @@ SECTIONS
   .text                ALIGN(0x8)    : { *(.text)                } > FLASH
   .exception_table_el1 ALIGN(0x800)  : { *(.exception_table_el1) } > FLASH
   .data                ALIGN(0x8)    : { *(.data)                } > RAM
+  .bss                 ALIGN(0x8)    : { *(.bss)                 } > RAM
   . = ALIGN(0x10);
   STACK_TOP = . + 0x400;
   . = STACK_TOP;
-  K_DATA = .;
+  FREE_SPACE = .;
 }
 

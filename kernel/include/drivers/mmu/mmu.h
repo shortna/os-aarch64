@@ -12,8 +12,8 @@ enum GRANULARITY_TYPE {
 extern bool mmu_init(enum GRANULARITY_TYPE granularity);
 extern bool mmu_enable(void);
 
-extern void* kmalloc(uint64_t size);
-extern void* mmap(void *out_addr);
 extern uint64_t PAGE_SIZE;
+extern void* malloc(uint16_t n_blocks);
+extern void free(void *addr);
 
 #endif
