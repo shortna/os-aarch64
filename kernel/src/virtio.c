@@ -4,8 +4,9 @@
 #include "drivers/mmu/mmu.h"
 
 static bool virtio_console_check_features(struct VirtioMMIO *d, uint32_t desired_features[4]);
-static struct VirtioDevice* virtio_init_legacy_queues(struct VirtioMMIO *d, uint32_t n_queues);
+static struct VirtioDevice* virtio_allocate_legacy_queues(struct VirtioMMIO *d, uint32_t n_queues);
 static void virtio_reset(struct VirtioMMIO *d);
+static void virtio_console_init_queues(struct VirtioDevice *d);
 
 VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device_type, uint32_t desired_features[4], enum VIRTIO_INIT_STATUS* err) {
   enum VIRTIO_INIT_STATUS s = VIRTIO_INIT_SUCCESS;
@@ -20,20 +21,21 @@ VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device_type, u
     goto init_err;
   }
 
-
   if (d->device_id == 0) {
     s = VIRTIO_INIT_ERROR_UNKNOWN_DEIVCE;
     goto init_err;
   }
 
   virtio_reset(d);
-  d->device_status[0] = VIRTIO_STATUS_ACKNOWLEDGE;
-  d->device_status[0] |= VIRTIO_STATUS_DRIVER;
+  d->device_status = VIRTIO_STATUS_ACKNOWLEDGE;
+  d->device_status |= VIRTIO_STATUS_DRIVER;
 
+  uint32_t n_queues = 0;
   bool features_supported = false;
   switch (device_type) {
     case VIRTIO_CONSOLE:
       features_supported = virtio_console_check_features(d, desired_features);
+      n_queues = 2;
       break;
     default:
       s = VIRTIO_INIT_ERROR_UNKNOWN_DEIVCE;
@@ -41,7 +43,7 @@ VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device_type, u
   }
 
   if (!features_supported) {
-    d->device_status[4] = VIRTIO_STATUS_FAILED;
+    d->device_status = VIRTIO_STATUS_FAILED;
     s = VIRTIO_INIT_ERROR_FEATURES_UNSUPPORTED;
     goto init_err;
   }
@@ -52,8 +54,16 @@ VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device_type, u
     d->guest_features = desired_features[i];
   }
 
-  struct VirtioDevice *device = virtio_init_legacy_queues(d, 2);
-  device->regs->device_status[0] |= VIRTIO_STATUS_DRIVER_OK;
+  struct VirtioDevice *device = virtio_allocate_legacy_queues(d, n_queues);
+  if (device->n_queues == 0) {
+    d->device_status = VIRTIO_STATUS_FAILED;
+    s = VIRTIO_INIT_ERROR_FAILED_TO_INIT_QUEUES;
+    free(device);
+    goto init_err;
+  }
+
+  device->type = device_type;
+  device->regs->device_status |= VIRTIO_STATUS_DRIVER_OK;
   return device;
 
 init_err:
@@ -64,29 +74,42 @@ init_err:
   return NULL;
 }
 
-static struct VirtioDevice* virtio_init_legacy_queues(struct VirtioMMIO *d, uint32_t n_queues) {
+static struct VirtioDevice* virtio_allocate_legacy_queues(struct VirtioMMIO *d, uint32_t n_queues) {
   uint64_t size = n_queues * sizeof(struct VirtQueue) + sizeof(struct VirtioDevice);
-  struct VirtioDevice *device = malloc(size / PAGE_SIZE + (bool)(size % PAGE_SIZE));
+  struct VirtioDevice *device = malloc(size_to_pages(size));
 
-  device->n_queues = n_queues;
+  uint32_t n_allocated_queues = 0;
   for (uint32_t i = 0; i < n_queues; i++) {
     d->queue_selector = i;
     uint32_t queue_num = d->queue_num_max;
+    if (queue_num == 0) {
+      continue;
+    }
 
-    size = sizeof(struct VirtQueueDesc) * queue_num + sizeof(struct VirtQueueAvail) + 2 * queue_num + sizeof(struct VirtQueueUsed) + 8 * queue_num;
-//    void *q = malloc();
-//    device->queues[i].desc = q;
-//    device->queues[i].avail = q + ;
-//    device->queues[i].used = q + ;
-//    device->queues[i].size = ;
-//
-//    d->queue_num = queue_num;
-//    d->queue_align = ;
-//    d->queue_pfn = device->queues[i].desc / PAGE_SIZE;
+    n_allocated_queues++;
+    size = ALIGN(sizeof(struct VirtQueueDesc) * queue_num + sizeof(struct VirtQueueAvail) + sizeof(uint16_t) * queue_num, PAGE_SIZE) 
+      + sizeof(struct VirtQueueUsed) + sizeof(struct VirtQueueUsedElem) * queue_num;
+    size = size_to_pages(size);
+
+    void *q = malloc(size);
+
+    device->queues[i].desc = q;
+    device->queues[i].avail = q + sizeof(struct VirtQueueDesc) * queue_num;
+    device->queues[i].used = ALIGN_ADDR(device->queues[i].avail + sizeof(struct VirtQueueAvail) + sizeof(uint16_t) * queue_num, PAGE_SIZE);
+    device->queues[i].size = size * PAGE_SIZE;
+
+    d->queue_num = queue_num;
+    d->queue_align = PAGE_SIZE;
+    d->queue_pfn = (uint64_t)q;
   }
 
   device->regs = d;
+  device->n_queues = n_allocated_queues;
   return device;
+}
+
+static void virtio_reset(struct VirtioMMIO *d) {
+  d->device_status = 0x0;
 }
 
 static bool virtio_console_check_features(struct VirtioMMIO *d, uint32_t desired_features[4]) {
@@ -98,7 +121,17 @@ static bool virtio_console_check_features(struct VirtioMMIO *d, uint32_t desired
   return true;
 }
 
-static void virtio_reset(struct VirtioMMIO *d) {
-  for (uint8_t i = 0; i < sizeof(d->device_status) / sizeof(*d->device_status); i++) 
-    d->device_status[i] = 0x0;
+void virtio_console_write(VirtioDevice console, uint8_t *msg) {
+  struct VirtioDevice *d = console;
+  d->regs->queue_selector = 1;
+  d->queues[1].desc[0] = (struct VirtQueueDesc) {.addr = (uint64_t)msg, .len = 7};
+  d->queues[1].avail->ring[0] = 0;
+  __asm__ volatile("dsb SY");
+  d->queues[1].avail->idx = 1;
+  __asm__ volatile("dsb SY");
+  d->regs->queue_notify = 1;
+}
+
+void virtio_console_emerge_write(VirtioDevice console, uint8_t c) {
+  ((struct VirtioDevice*)console)->regs->configuration_space[2] = c;
 }

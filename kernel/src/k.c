@@ -79,15 +79,15 @@ void kmain(uint64_t fdt_address) {
   driver_add(DT_UART, uart0, pl011_int);
   uart_write_byte(uart0, 'U');
 
-  VirtioDevice console = virtio_init(VIRTIO_CONSOLE_ADDRESS, VIRTIO_CONSOLE, (uint32_t[4]){VIRTIO_CONSOLE_FEATURE_EMERG_WRITE}, NULL);
+  VirtioDevice console = virtio_init(VIRTIO_CONSOLE_ADDRESS, VIRTIO_CONSOLE, 
+      (uint32_t[4]){VIRTIO_CONSOLE_FEATURE_EMERG_WRITE}, NULL);
   if (console == NULL) {
     goto hang;
   }
   uint8_t virtio_console_int = 0x2f;
   register_interrupt(dist, redist, virtio_console_int, int_p);
   driver_add(DT_VIRTIO, console, virtio_console_int);
-
-//  virtio_write(console, "CONSOLE");
+  virtio_console_write(console, "CONSOLE");
 
 hang:
   __asm__("mov x0, 0xdead");

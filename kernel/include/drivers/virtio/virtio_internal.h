@@ -6,11 +6,11 @@
 #define VIRTIO_MAGIC              0x74726976
 
 enum VIRTIO_STATUS {
-  VIRTIO_STATUS_ACKNOWLEDGE        = 1 << 1,
-  VIRTIO_STATUS_DRIVER             = 1 << 2,
-  VIRTIO_STATUS_DRIVER_OK          = 1 << 4,
-  VIRTIO_STATUS_DEVICE_NEEDS_RESET = 1, // index 2 in status field
-  VIRTIO_STATUS_FAILED             = 1, // index 4 in status field
+  VIRTIO_STATUS_ACKNOWLEDGE        = 0x1,
+  VIRTIO_STATUS_DRIVER             = 0x4,
+  VIRTIO_STATUS_DRIVER_OK          = 0x8,
+  VIRTIO_STATUS_DEVICE_NEEDS_RESET = 0x40,
+  VIRTIO_STATUS_FAILED             = 0x80,
 };
 
 struct VirtioMMIO {/*{{{*/
@@ -36,10 +36,8 @@ struct VirtioMMIO {/*{{{*/
   uint32_t interrupt_status;          /* 0x060 */
   uint32_t interrupt_acknowledge;     /* 0x064 */
   uint8_t  padding4[8];
-  // Just guess, idk physical size of device_status field. 
-  // Reference sheet provides no sizes for fields but VIRTIO_STATUS_FAILED is bit 128
-  // so it at least 129 bits wide [0:128]
-  uint32_t device_status[36];         /* 0x070 */ 
+  uint32_t device_status;             /* 0x070 */ 
+  uint8_t  padding5[0x8C];
   uint32_t configuration_space[];     /* 0x100 */
 };/*}}}*/
 
@@ -91,6 +89,7 @@ struct VirtQueue {
 
 struct VirtioDevice {
   uint32_t n_queues;
+  enum VIRTIO_DEVICE type;
   struct VirtioMMIO *regs;
   struct VirtQueue queues[];
 };

@@ -21,8 +21,11 @@ enum VIRTIO_INIT_STATUS {
   VIRTIO_INIT_ERROR_UNKNOWN_DEIVCE,
   VIRTIO_INIT_ERROR_INCORRECT_VERSION,
   VIRTIO_INIT_ERROR_FEATURES_UNSUPPORTED,
+  VIRTIO_INIT_ERROR_FAILED_TO_INIT_QUEUES,
 };
 
 VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device, uint32_t desired_features[4], enum VIRTIO_INIT_STATUS* err);
+void virtio_console_write(VirtioDevice console, uint8_t *msg);
+void virtio_console_emerge_write(VirtioDevice console, uint8_t c);
 
 #endif
