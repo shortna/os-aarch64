@@ -25,7 +25,7 @@ enum VIRTIO_INIT_STATUS {
 };
 
 VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device, uint32_t desired_features[4], enum VIRTIO_INIT_STATUS* err);
-void virtio_console_write(VirtioDevice console, uint8_t *msg);
+void virtio_console_write(VirtioDevice console, uint8_t *msg, uint32_t len);
 void virtio_console_emerge_write(VirtioDevice console, uint8_t c);
 
 #endif

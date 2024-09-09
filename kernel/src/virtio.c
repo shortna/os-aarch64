@@ -6,7 +6,6 @@
 static bool virtio_console_check_features(struct VirtioMMIO *d, uint32_t desired_features[4]);
 static struct VirtioDevice* virtio_allocate_legacy_queues(struct VirtioMMIO *d, uint32_t n_queues);
 static void virtio_reset(struct VirtioMMIO *d);
-static void virtio_console_init_queues(struct VirtioDevice *d);
 
 VirtioDevice virtio_init(uint64_t device_base, enum VIRTIO_DEVICE device_type, uint32_t desired_features[4], enum VIRTIO_INIT_STATUS* err) {
   enum VIRTIO_INIT_STATUS s = VIRTIO_INIT_SUCCESS;
@@ -96,7 +95,7 @@ static struct VirtioDevice* virtio_allocate_legacy_queues(struct VirtioMMIO *d, 
     device->queues[i].desc = q;
     device->queues[i].avail = q + sizeof(struct VirtQueueDesc) * queue_num;
     device->queues[i].used = ALIGN_ADDR(device->queues[i].avail + sizeof(struct VirtQueueAvail) + sizeof(uint16_t) * queue_num, PAGE_SIZE);
-    device->queues[i].size = size * PAGE_SIZE;
+    device->queues[i].size = queue_num;
 
     d->queue_num = queue_num;
     d->queue_align = PAGE_SIZE;
@@ -121,13 +120,15 @@ static bool virtio_console_check_features(struct VirtioMMIO *d, uint32_t desired
   return true;
 }
 
-void virtio_console_write(VirtioDevice console, uint8_t *msg) {
+void virtio_console_write(VirtioDevice console, uint8_t *msg, uint32_t len) {
   struct VirtioDevice *d = console;
-  d->regs->queue_selector = 1;
-  d->queues[1].desc[0] = (struct VirtQueueDesc) {.addr = (uint64_t)msg, .len = 7};
-  d->queues[1].avail->ring[0] = 0;
+  uint16_t idx = d->queues[1].avail->idx;
+  uint32_t size = d->queues[1].size;
+
+  d->queues[1].desc[idx % size] = (struct VirtQueueDesc) {.addr = (uint64_t)msg, .len = len};
+  d->queues[1].avail->ring[idx % size] = idx;
   __asm__ volatile("dsb SY");
-  d->queues[1].avail->idx = 1;
+  d->queues[1].avail->idx = idx + 1;
   __asm__ volatile("dsb SY");
   d->regs->queue_notify = 1;
 }

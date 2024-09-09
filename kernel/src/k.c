@@ -87,7 +87,9 @@ void kmain(uint64_t fdt_address) {
   uint8_t virtio_console_int = 0x2f;
   register_interrupt(dist, redist, virtio_console_int, int_p);
   driver_add(DT_VIRTIO, console, virtio_console_int);
-  virtio_console_write(console, "CONSOLE");
+  virtio_console_write(console, "CONSOLE", 7);
+  virtio_console_write(console, "\n", 1);
+  virtio_console_write(console, ":)", 2);
 
 hang:
   __asm__("mov x0, 0xdead");
