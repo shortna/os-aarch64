@@ -4,6 +4,7 @@
 #include "types.h"
 
 #define GENMASK(n_bits, position) ((((uint64_t)1 << (n_bits)) - 1) << (position))
+#define ALIGN_ADDR(x, a) ((void*)(((uint64_t)(x) + ((a) - 1)) & ~((a) - 1)))
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 #define BIT(x) ((uint64_t)1 << (x))
 

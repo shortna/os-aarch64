@@ -85,7 +85,6 @@ enum MEMORY_ATTRIBUTES {/*{{{*/
 #define RAM_L3_ENTRY_ATTRIBUTES  ((uint64_t)PAGE_ENTRY | MEMORY_ATTRIBUTE_NORMAL | PAGE_ATTRIBUTE_CONTIGUOUS \
     | PAGE_ATTRIBUTE_INNER_SHAREABLE | PAGE_ATTRIBUTE_READ_WRITE | PAGE_ATTRIBUTE_ACCESS_FLAG)
 
-#define _1GB                 ((uint64_t)1024 * 1024 * 1024)
 #define _1TB                 ((uint64_t)1024 * 1024 * 1024 * 1024)
 #define _1PB                 ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024)/*}}}*/
 
@@ -122,7 +121,7 @@ void *malloc(uint16_t n_blocks) {
       while (--i) 
         BLOCKS.b[block + i].occupied = true;
 
-      return (void*)ALIGN((uint64_t)(BLOCKS.b + BLOCKS.n), PAGE_SIZE) + block * PAGE_SIZE;
+      return ALIGN_ADDR(BLOCKS.b + BLOCKS.n, PAGE_SIZE) + block * PAGE_SIZE;
     }
     block += i + BLOCKS.b[block + i].next;
   }
@@ -131,7 +130,7 @@ void *malloc(uint16_t n_blocks) {
 }
 
 void free(void *addr) {
-  uint64_t block_ind = (uint64_t)(addr - (void*)(BLOCKS.b + BLOCKS.n)) / PAGE_SIZE;
+  uint64_t block_ind = ((uint64_t)addr - (uint64_t)(BLOCKS.b + BLOCKS.n)) / PAGE_SIZE;
   for (uint16_t block = 0; block < BLOCKS.b[block_ind].next + 1; block++) {
     BLOCKS.b[block_ind + block].occupied = false;
   }
@@ -186,7 +185,7 @@ void mmu_init_translation_tables(enum ADDRESSABLE_IPS ips_size, enum GRANULARITY
       break;
   }
 
-  uint64_t *base = (void *)ALIGN((uint64_t)FREE, TABLE_SIZE);
+  uint64_t *base = ALIGN_ADDR(FREE, TABLE_SIZE);
   uint64_t *cur_level = base;
   uint64_t address = 0x0;
 
@@ -216,7 +215,7 @@ void mmu_init_translation_tables(enum ADDRESSABLE_IPS ips_size, enum GRANULARITY
   uint64_t *previous_level = base;
   n_entries = n_written_pages;
   for (uint8_t i = 3; i > 0; i--) {
-    cur_level = (void*)ALIGN((uint64_t)(cur_level + n_entries), TABLE_SIZE);
+    cur_level = ALIGN_ADDR(cur_level + n_entries, TABLE_SIZE);
     n_entries = n_entries / TABLE_ENTRIES_MAX + (bool)(n_entries % TABLE_ENTRIES_MAX); // n_tables + 1 if last not full
     for (uint64_t entry = 0; entry < n_entries; entry++)
       cur_level[entry] = (uint64_t)previous_level + entry * TABLE_SIZE | TABLE_ENTRY;
@@ -228,9 +227,9 @@ void mmu_init_translation_tables(enum ADDRESSABLE_IPS ips_size, enum GRANULARITY
   ttbr0_el1 |= (uint64_t)cur_level; // write address of ttbr
   mmu_write_ttbr0_el1(ttbr0_el1);
 
-  FREE = (void*)ALIGN((uint64_t)(cur_level + TABLE_ENTRIES_MAX), PAGE_SIZE);
+  FREE = ALIGN_ADDR(cur_level + TABLE_ENTRIES_MAX, PAGE_SIZE);
   n_entries = (RAM_END - (uint64_t)FREE) / PAGE_SIZE;
-  n_entries -= n_entries * sizeof(struct Block) / PAGE_SIZE + (bool)((n_entries * sizeof(struct Block)) % PAGE_SIZE);
+  n_entries -= size_to_pages(n_entries * sizeof(struct Block));
 
   BLOCKS.b = FREE;
   BLOCKS.n = n_entries;
