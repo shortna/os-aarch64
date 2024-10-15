@@ -9,19 +9,23 @@ TARGET := k
 INCLUDE_DIR = include
 
 LD_SCRIPT := script.ld
-CFLAGS    := -nostdlib -ffreestanding -Wall -Wextra -g -I $(INCLUDE_DIR)
-QEMUFLAGS := -nographic -no-reboot -machine virt -cpu cortex-a57 -m 4 -serial mon:stdio
+CFLAGS    := -std=c99 -nostdlib -ffreestanding -Wall -Wextra -mno-unaligned-access -g -I $(INCLUDE_DIR)
 
-CC      := ../aarch64-none-elf/bin/aarch64-none-elf-gcc
-AS      := ../aarch64-none-elf/bin/aarch64-none-elf-as
-LD      := ../aarch64-none-elf/bin/aarch64-none-elf-ld
-OBJCOPY := ../aarch64-none-elf/bin/aarch64-none-elf-objcopy
+CONSOLE_SOCKET :=/tmp/virt_console.socket
+# uart connected to stdio, console connected to socket
+QEMU_CONSOLE := -chardev socket,id=console0,path=$(CONSOLE_SOCKET),server=on,wait=on -device virtio-serial-device,max_ports=2 -device virtconsole,chardev=console0,id=console
+# general configuration
+QEMUFLAGS := -machine virt,gic-version=3,virtualization=off,secure=off,mte=off,its=off -cpu cortex-a57 -m 1G -no-reboot -nographic -serial mon:stdio $(QEMU_CONSOLE) 
+
+CC := clang -target aarch64-none-elf
+LD := ld.lld
 
 SRCS    := $(wildcard $(SRCDIR)/*)
 OBJECTS := $(patsubst $(SRCDIR)/%,$(OBJDIR)/%.o,$(SRCS))
+TRACE   := ""
 
-.PHONY: all clean distclean qemu qemu-debug
-all:$(TARGET_DIR) $(TARGET) 
+.PHONY: all connect_to_console clean distclean qemu qemu-debug dtb virt virt-debug
+all: $(OBJDIR) $(TARGET_DIR) $(TARGET) 
 
 $(OBJDIR):
 	mkdir $@
@@ -29,7 +33,7 @@ $(OBJDIR):
 $(TARGET_DIR):
 	mkdir $@
 
-$(OBJDIR)/%.o: $(SRCDIR)/% $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJECTS)
@@ -41,8 +45,15 @@ clean:
 distclean:
 	$(RM) -r $(OBJDIR) $(TARGET_DIR)
 
-qemu: $(TARGET_DIR) $(TARGET)
+qemu: all
 	qemu-system-aarch64 $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
 
-qemu-debug: $(TARGET_DIR) $(TARGET)
-	qemu-system-aarch64 -s -S $(QEMUFLAGS) -kernel $(TARGET_DIR)/$(TARGET)
+qemu-debug: all
+	qemu-system-aarch64 -s -S $(QEMUFLAGS) --trace $(TRACE) -kernel $(TARGET_DIR)/$(TARGET)
+
+connect_to_console:
+	socat UNIX-CONNECT:$(CONSOLE_SOCKET) STDOUT
+
+dtb: 
+	qemu-system-aarch64 $(QEMUFLAGS) -machine dumpdtb=dtb
+

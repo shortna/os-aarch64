@@ -1,2 +1,6 @@
-aarch64-none-elf
 .cache
+build
+objects
+dtb
+compile_commands.json
+.clang-format
