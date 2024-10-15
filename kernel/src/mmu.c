@@ -1,7 +1,7 @@
 #include "drivers/mmu/mmu.h"
 #include "bits.h"
 
-enum ADDRESSABLE_IPS {/*{{{*/
+enum ADDRESSABLE_IPS {
   IPS_4GB   = 0,
   IPS_64GB  = 1,
   IPS_1TB   = 2,
@@ -10,9 +10,9 @@ enum ADDRESSABLE_IPS {/*{{{*/
   IPS_256TB = 5,
   IPS_4PB   = 6,
   IPS_64PB  = 7,
-};/*}}}*/
+};
 
-enum PAGE_ATTRIBUTES : uint64_t {/*{{{*/
+enum PAGE_ATTRIBUTES : uint64_t {
   PAGE_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER = BIT(54),
   PAGE_ATTRIBUTE_READ_WRITE                 = 0x040,
   PAGE_ATTRIBUTE_READ_ONLY                  = 0x0C0,
@@ -27,7 +27,7 @@ enum PAGE_ATTRIBUTES : uint64_t {/*{{{*/
   PAGE_ATTRIBUTE_NON_SHAREABLE              = 0x000,
   PAGE_ATTRIBUTE_INNER_SHAREABLE            = 0x300,
   PAGE_ATTRIBUTE_OUTER_SHAREABLE            = 0x200,
-};/*}}}*/
+};
 
 enum BLOCK_ATTRIBUTES : uint64_t {/*{{{*/
   BLOCK_ATTRIBUTE_UNPRIVILEGED_EXECUTE_NEVER = BIT(54),
